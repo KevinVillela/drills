@@ -1,0 +1,11 @@
+<!-- <ng-container *ngIf="lastEntity | async; let entity">
+  <mat-icon [@signal]="signal" class="entity" [svgIcon]="entity.type">
+  </mat-icon>
+  <mat-icon [@signal]="signal" class="entity" [svgIcon]="entity.type">
+  </mat-icon>
+</ng-container> -->
+<div *ngIf="entity | async; let entity" [ngClass]="actionClass | async">
+  <mat-icon [@signal]="signal" class="entity" [svgIcon]="entity.icon" (click)="selectEntity()" (dblclick)="deleteEntity()"
+    [style.height.px]="size | async" [style.width.px]="size | async">
+  </mat-icon>
+</div>

@@ -1,0 +1,16 @@
+:host {
+    position: relative;
+    background: sandybrown;
+}
+
+drills-entity {
+    position: absolute;
+}
+
+mat-slider {
+    left: 400px;
+}
+
+.selected {
+    border: gold 2px solid;
+}
