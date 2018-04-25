@@ -13,7 +13,7 @@ import { MatInputBase } from '@angular/material';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CourtComponent implements OnInit {
-  currentEntity: Observable<Entity>;
+  currentEntity: Observable<Entity | undefined>;
   interpolate: number;
   past: number;
   entities: Observable<Entity[]>;

@@ -14,13 +14,13 @@ import { MatSliderChange } from '@angular/material';
 export class ActionComponent implements OnInit {
 
   readonly actionTypes: Observable<EntityActionType[]>
-  readonly currentAction: Observable<EntityAction>;
+  readonly currentAction: Observable<EntityAction | undefined>;
   readonly start: Observable<number>;
   readonly end: Observable<number>;
 
   constructor(private readonly store: Store<{}>) {
     this.currentAction = store.select((getCurrentAction));
-    this.actionTypes = store.select(currentEntity).pipe(map((entity) => {
+    this.actionTypes = store.select(currentEntity).pipe(map((entity: Entity | undefined) => {
       if (!entity) {
         return [];
       }

@@ -1,4 +1,4 @@
-import { Action, createSelector } from '@ngrx/store';
+import { Action, createSelector, MemoizedSelector } from '@ngrx/store';
 import { InitialState } from '@ngrx/store/src/models';
 import { last } from 'rxjs/operators';
 
@@ -154,8 +154,13 @@ export const maxAnimationLength = createSelector(getDrillsState, (drillsState) =
     return totalAnimationLength(entity);
 })));
 
-export const currentEntity = createSelector(getDrillsState,
-    (drillsState) => drillsState.entities[drillsState.entityIndex]);
+export const currentEntity: MemoizedSelector<{ drillsState: DrillsState }, Entity | undefined> = createSelector(getDrillsState,
+    (drillsState) => {
+        if (drillsState.entityIndex == null) {
+            return undefined;
+        }
+        drillsState.entities[drillsState.entityIndex];
+    });
 export const keyframeIndex = createSelector(getDrillsState,
     (drillsState) => drillsState.keyframeIndex);
 
@@ -164,14 +169,14 @@ export const getCurrentAction = createSelector(currentEntity, keyframeIndex,
         if (entity) {
             return actionForKeyframe(entity, keyframeIndex);
         }
-        return null;
+        return undefined;
     });
 
 export function totalAnimationLength(entity: Entity): number {
     return Math.max(...entity.actions.map((action) => action.animation.end));
 }
 
-export function actionForKeyframe(entity: Entity, keyframe: number): EntityAction | null {
+export function actionForKeyframe(entity: Entity, keyframe: number): EntityAction | undefined {
     return entity.actions.find((action) => keyframe >= action.animation.start && keyframe <= action.animation.end);
 }
 
@@ -291,7 +296,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
             };
         }
         case CHANGE_ACTION_TIME: {
-            const actionEntity = state.entities[state.entityIndex];
+            const actionEntity = state.entities[state.entityIndex!];
             const currentAction: EntityAction = getCurrentAction.projector(actionEntity, state.keyframeIndex);
             const endDistance = currentAction.animation.end - action.end;
             const startDistance = currentAction.animation.start - action.start;

@@ -29,19 +29,21 @@ export class AppComponent {
 
   onChange(change: MatSliderChange) {
     const keyframeIndex = change.value;
-    this.store.dispatch(new UpdateKeyframeIndex(keyframeIndex));
+    if (keyframeIndex != null) {
+      this.store.dispatch(new UpdateKeyframeIndex(keyframeIndex));
+    }
   }
 
   onSpeedChange(change: MatSliderChange) {
-    this.store.dispatch(new SpeedChange(change.value));
+    this.store.dispatch(new SpeedChange(change.value!));
   }
 
   onInterpolateChange(change: MatSliderChange) {
-    this.store.dispatch(new InterpolateChange(change.value));
+    this.store.dispatch(new InterpolateChange(change.value!));
   }
 
   onPastChange(change: MatSliderChange) {
-    this.store.dispatch(new PastChange(change.value));
+    this.store.dispatch(new PastChange(change.value!));
   }
 
   play() {

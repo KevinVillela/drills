@@ -8,7 +8,7 @@ import { MatSliderModule } from '@angular/material';
 @Pipe({ name: 'array' })
 export class ArrayPipe implements PipeTransform {
   transform(value, args: string[]): any {
-    let res = [];
+    let res: number[] = [];
     for (let i = 1; i <= value; i++) {
       res.push(i);
     }
