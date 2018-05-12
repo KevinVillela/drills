@@ -1,6 +1,5 @@
 :host {
     position: relative;
-    background: sandybrown;
 }
 
 drills-entity {
@@ -13,4 +12,9 @@ mat-slider {
 
 .selected {
     border: gold 2px solid;
+}
+
+canvas {
+    height: 400px;
+    width: 400px;
 }

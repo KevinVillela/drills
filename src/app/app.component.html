@@ -13,7 +13,7 @@
 </div>
 <div>
   Speed
-  <mat-slider thumb-label="true" min="30" max="1000" step="10" invert (input)="onSpeedChange($event)">
+  <mat-slider thumb-label="true" min="30" max="200" step="10" invert (input)="onSpeedChange($event)">
   </mat-slider>
 </div>
 <div>
@@ -23,7 +23,7 @@
 </div>
 <div>
   Past
-  <mat-slider thumb-label="true" min="0" max="10" step="1" (input)="onPastChange($event)" value="3">
+  <mat-slider thumb-label="true" min="0" max="10" step="1" [ngModel]="past | async" (input)="onPastChange($event)" value="3">
   </mat-slider>
 </div>
 <button mat-button (click)="export()">Export</button>

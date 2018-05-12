@@ -1,9 +1,10 @@
 import { Component, HostListener, ViewChild } from '@angular/core';
 import { MatSliderChange } from '@angular/material/slider';
-import { DrillsState, UpdateKeyframeIndex, SpeedChange, NextFrame, PastChange, maxAnimationLength, InterpolateChange } from './model/model';
+import { DrillsState, UpdateKeyframeIndex, SpeedChange, NextFrame, PastChange, maxAnimationLength, InterpolateChange, getPast } from './model/model';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
-import { map, switchMap, take } from 'rxjs/operators';
+import { combineLatest } from 'rxjs/observable/combineLatest';
+import { map, switchMap, take, filter } from 'rxjs/operators';
 import { interval } from 'rxjs/observable/interval';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
@@ -16,15 +17,17 @@ export class AppComponent {
   max: Observable<number>;
   keyframeIndex: Observable<number>;
   playing = new BehaviorSubject<boolean>(false);
+  past: Observable<number>;
 
   constructor(private readonly store: Store<{ drillsState: DrillsState }>) {
     this.max = store.select(maxAnimationLength);
     this.keyframeIndex = store.select((state) => state.drillsState.keyframeIndex);
-    this.store.select((state) => state.drillsState.speed).pipe(switchMap((period) => interval(period))).subscribe(() => {
+    combineLatest(this.playing, this.store.select((state) => state.drillsState.speed)).pipe(switchMap(([_, period]) => interval(period))).subscribe(() => {
       if (this.playing.getValue()) {
         this.store.dispatch(new NextFrame());
       }
     });
+    this.past = store.select(getPast);
   }
 
   onChange(change: MatSliderChange) {
@@ -47,12 +50,14 @@ export class AppComponent {
   }
 
   play() {
+    this.store.dispatch(new InterpolateChange(0));
+    this.store.dispatch(new PastChange(0));
     this.playing.next(!this.playing.getValue());
   }
 
   export() {
     this.store.select((state) => state.drillsState).pipe(take(1)).subscribe((val) => {
       console.log(val);
-    })
+    });
   }
 }

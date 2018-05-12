@@ -1,4 +1,4 @@
-<ng-container *ngFor="let entity of (entities | async); index as idx; trackBy: trackByIdx">
+<!-- <ng-container *ngFor="let entity of (entities | async); index as idx; trackBy: trackByIdx">
   <ng-container *ngFor="let i of past | array">
     <drills-entity *ngIf="getPos(entity, i)" [style.left.px]="getPos(entity, i)?.posX" [style.top.px]="getPos(entity, i)?.posY"
       [index]="idx" [style.opacity]="(100 - (100 / past) * i) / 100" [keyframeIndex]="keyframeIndex - i">
@@ -12,4 +12,7 @@
   <drills-entity [class.selected]="entity === (currentEntity | async)" [style.left.px]="getPos(entity)?.posX" [style.top.px]="getPos(entity)?.posY"
     [index]="idx" (newPosition)="addPosition(idx, $event)" (setPosition)="setPosition(idx, $event)" [keyframeIndex]="keyframeIndex">
   </drills-entity>
-</ng-container>
+</ng-container> -->
+
+<canvas id="c"></canvas>
+<button mat-button (click)="export()">Export</button>

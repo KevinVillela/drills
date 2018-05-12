@@ -10,6 +10,6 @@
 </div>
 <div>
   End
-  <mat-slider #endSlider thumb-label="true" min="1" max="90" step="1" [ngModel]="end | async" (input)="onLengthChange(startSlider.value, $event.value)">
+  <mat-slider #endSlider thumb-label="true" min="1" max="90" step="1" [ngModel]="end | async" (input)="$event.value > startSlider.value && onEndChange($event.value)">
   </mat-slider>
 </div>

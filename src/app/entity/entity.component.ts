@@ -1,5 +1,5 @@
 import { EventEmitter, Component, OnInit, HostListener, ChangeDetectionStrategy, Input, HostBinding, Output, ViewChild } from '@angular/core';
-import { Entity, Position, DrillsState, DeleteEntity, SetPosition, SelectEntity, actionForKeyframe, getCurrentAction, BallActions, keyframeIndex, percentOfAction } from '../model/model';
+import { Entity, Position, DrillsState, DeleteEntity, SetPosition, SelectEntity, actionForKeyframe, getCurrentAction, BallActions, getKeyframeIndex, percentOfAction } from '../model/model';
 import { Subject } from 'rxjs/Subject';
 import { throttle, throttleTime, timeInterval, switchMap, map, withLatestFrom } from 'rxjs/operators';
 import { CourtComponent } from '../court/court.component';
@@ -52,7 +52,7 @@ export class EntityComponent implements OnInit {
     this.entity = this.store.select((state) => state.drillsState).pipe((map((drillsState) => {
       return drillsState.entities[this.index];
     })));
-    this.actionClass = this.entity.pipe(withLatestFrom(this.store.select(keyframeIndex)), map(([entity, keyframeIndex]) => {
+    this.actionClass = this.entity.pipe(withLatestFrom(this.store.select(getKeyframeIndex)), map(([entity, keyframeIndex]) => {
       if (entity) {
         return actionForKeyframe(entity, keyframeIndex);
       }
@@ -65,7 +65,7 @@ export class EntityComponent implements OnInit {
         case BallActions.SPIKE:
           return 'spin';
         case BallActions.SET:
-          return 'set'
+          return 'set';
         case BallActions.BUMP:
           return 'bump';
         default:

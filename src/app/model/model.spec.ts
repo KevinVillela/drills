@@ -26,7 +26,7 @@ fdescribe('drillsReducer', () => {
                 animation: [pos1],
             }]
         };
-    })
+    });
 
     it('should AddPosition with interpolate of 0', () => {
         stateAfterAdd.interpolate = 0;

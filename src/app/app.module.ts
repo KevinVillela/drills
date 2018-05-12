@@ -19,6 +19,7 @@ import { drillsReducer } from './model/model';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { ActionComponent } from './action/action.component';
 import { ActionModule } from './action/action.module';
+import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -28,6 +29,7 @@ import { ActionModule } from './action/action.module';
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
+    FormsModule,
     ModelModule,
     StoreModule.forRoot({ drillsState: drillsReducer }),
     StoreDevtoolsModule.instrument({

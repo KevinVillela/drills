@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { EntityAction, PlayerActions, BallActions, Entity, EntityActionType, getCurrentAction, ChangeAction, currentEntity, EntityType, ChangeActionLength } from '../model/model';
+import { EntityAction, PlayerActions, BallActions, Entity, EntityActionType, getCurrentAction, ChangeAction, currentEntity, EntityType, ChangeActionEnd } from '../model/model';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
 import { map } from 'rxjs/operators';
@@ -13,7 +13,7 @@ import { MatSliderChange } from '@angular/material';
 })
 export class ActionComponent implements OnInit {
 
-  readonly actionTypes: Observable<EntityActionType[]>
+  readonly actionTypes: Observable<EntityActionType[]>;
   readonly currentAction: Observable<EntityAction | undefined>;
   readonly start: Observable<number>;
   readonly end: Observable<number>;
@@ -34,13 +34,13 @@ export class ActionComponent implements OnInit {
       if (!action) {
         return 0;
       }
-      return action.animation.start;
+      return action.animation.startFrame;
     })));
     this.end = this.currentAction.pipe((map((action) => {
       if (!action) {
         return 0;
       }
-      return action.animation.end;
+      return action.animation.endFrame;
     })));
   }
 
@@ -48,7 +48,11 @@ export class ActionComponent implements OnInit {
   }
 
   onLengthChange(start: number, end: number): void {
-    this.store.dispatch(new ChangeActionLength(start, end));
+    console.warn('not hooked up');
+  }
+
+  onEndChange(end: number): void {
+    this.store.dispatch(new ChangeActionEnd(end));
   }
 
   onActionTypeChange(val: EntityActionType) {

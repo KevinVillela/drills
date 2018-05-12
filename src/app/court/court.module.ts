@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { CourtComponent } from './court.component';
 import { ModelModule } from '../model/model.module';
 import { EntityModule } from '../entity/entity.module';
-import { MatSliderModule } from '@angular/material';
+import { MatSliderModule, MatButtonModule } from '@angular/material';
+import { IconService } from './icons';
 
 @Pipe({ name: 'array' })
 export class ArrayPipe implements PipeTransform {
   transform(value, args: string[]): any {
-    let res: number[] = [];
+    const res: number[] = [];
     for (let i = 1; i <= value; i++) {
       res.push(i);
     }
@@ -21,7 +22,9 @@ export class ArrayPipe implements PipeTransform {
     CommonModule,
     EntityModule,
     MatSliderModule,
+    MatButtonModule
   ],
+  providers: [IconService],
   declarations: [CourtComponent, ArrayPipe],
   exports: [CourtComponent, ArrayPipe],
 })
