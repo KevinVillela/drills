@@ -9,8 +9,6 @@ import { MatIconRegistry, MatButtonModule, MatSlideToggleModule } from '@angular
 
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { EntityComponent } from './entity/entity.component';
-import { EntityModule } from './entity/entity.module';
 import { LegendModule } from './legend/legend.module';
 import { CourtModule } from './court/court.module';
 import { ModelModule } from './model/model.module';
@@ -38,7 +36,6 @@ import { FormsModule } from '@angular/forms';
     MatSliderModule,
     MatIconModule,
     HttpClientModule,
-    EntityModule,
     LegendModule,
     CourtModule,
     MatButtonModule,

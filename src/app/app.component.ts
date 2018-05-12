@@ -9,7 +9,7 @@ import { interval } from 'rxjs/observable/interval';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 @Component({
-  selector: 'app-root',
+  selector: 'drills-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
@@ -38,15 +38,24 @@ export class AppComponent {
   }
 
   onSpeedChange(change: MatSliderChange) {
-    this.store.dispatch(new SpeedChange(change.value!));
+    if (change.value == null) {
+      throw new Error('Speed change event value was null');
+    }
+    this.store.dispatch(new SpeedChange(change.value));
   }
 
   onInterpolateChange(change: MatSliderChange) {
-    this.store.dispatch(new InterpolateChange(change.value!));
+    if (change.value == null) {
+      throw new Error('Interpolate change event value was null');
+    }
+    this.store.dispatch(new InterpolateChange(change.value));
   }
 
   onPastChange(change: MatSliderChange) {
-    this.store.dispatch(new PastChange(change.value!));
+    if (change.value == null) {
+      throw new Error('Past change event value was null');
+    }
+    this.store.dispatch(new PastChange(change.value));
   }
 
   play() {

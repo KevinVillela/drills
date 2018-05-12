@@ -24,11 +24,11 @@ export class IconService {
             }));
         });
         zip(...callbacks).subscribe((assets: { url: string, svg: string }[]) => {
-            const map = new Map<string, fabric.Path>();
+            const tempMap = new Map<string, fabric.Path>();
             assets.forEach((asset) => {
-                map.set(asset.url, asset.svg);
+                tempMap.set(asset.url, asset.svg);
             });
-            this.iconMap.next(map);
+            this.iconMap.next(tempMap);
         });
     }
 
@@ -56,7 +56,6 @@ export class IconService {
         if (!newIcon) {
             throw new Error(`Could not find icon for ${entity.icon}`);
         }
-        let clonedIcon: fabric.Path;
         const promise = new Promise<{ svg: fabric.Path, cached: boolean }>((resolve) => {
             newIcon.clone((res) => {
                 res.lockUniScaling = true;

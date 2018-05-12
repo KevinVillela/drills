@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { EntityAction, PlayerActions, BallActions, Entity, EntityActionType, getCurrentAction, ChangeAction, currentEntity, EntityType, ChangeActionEnd } from '../model/model';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs/Observable';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 import { MatSliderChange } from '@angular/material';
 
 @Component({
@@ -52,10 +52,28 @@ export class ActionComponent implements OnInit {
   }
 
   onEndChange(end: number): void {
-    this.store.dispatch(new ChangeActionEnd(end));
+    const id = this.getActionId();
+    if (id == null) {
+      throw new Error('No action selected during end change');
+    }
+    this.store.dispatch(new ChangeActionEnd(id, end));
   }
 
   onActionTypeChange(val: EntityActionType) {
-    this.store.dispatch(new ChangeAction(val));
+    const id = this.getActionId();
+    if (id == null) {
+      throw new Error('No action selected during type change');
+    }
+    this.store.dispatch(new ChangeAction(id, val));
+  }
+
+  private getActionId(): number | undefined {
+    let id: undefined | number;
+    this.currentAction.pipe(take(1)).subscribe((val) => {
+      if (val) {
+        id = val.actionId;
+      }
+    });
+    return id;
   }
 }

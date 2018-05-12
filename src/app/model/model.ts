@@ -50,12 +50,18 @@ export type EntityActionType = BallActions | PlayerActions;
 export interface EntityAction {
     type: BallActions | PlayerActions;
     animation: {
-        animationId: number;
-        /** The starting keyframe, inclusive. */
+        /** The starting keyframe of the action, exclusive. */
         startFrame: number;
-        /** The ending keyframe, exclusive. */
+        /** The ending keyframe of the action, exclusive. */
         endFrame: number;
+        /** 
+         * The starting keyframe for the player to prepare to take the action, e.g.
+         * moving to the ball to set it. If unset, there is no player set for this action yet.
+         */
+        playerStartFrame?: number;
+        endPos: Position;
     };
+    actionId: number;
     entityIds: Set<number>;
 }
 
@@ -84,8 +90,6 @@ export interface Entity {
     id: number;
     type: EntityType;
     icon: string;
-    // Actions do not have to be in order.
-    // actions: EntityAction[];
     start: Position;
 }
 
@@ -109,7 +113,6 @@ export class AddEntity implements Action {
     constructor(readonly entity: {
         type: EntityType;
         icon: string;
-        actions: EntityAction[];
         start: Position;
     }) { }
 }
@@ -181,14 +184,14 @@ export const CHANGE_ACTION = 'CHANGE_ACTION';
 
 export class ChangeAction implements Action {
     readonly type = CHANGE_ACTION;
-    constructor(readonly actionType: EntityActionType) { }
+    constructor(readonly actionId: number, readonly actionType: EntityActionType) { }
 }
 
 export const CHANGE_ACTION_END = 'CHANGE_ACTION_END';
 
 export class ChangeActionEnd implements Action {
     readonly type = CHANGE_ACTION_END;
-    constructor(readonly end: number) { }
+    constructor(readonly actionId: number, readonly end: number) { }
 }
 export type ActionTypes = ChangeAction | ChangeActionEnd | AddEntity | AddAction | UpdateKeyframeIndex | SpeedChange | NextFrame | DeleteEntity | SetPosition | InterpolateChange | PastChange | SelectEntity;
 
@@ -208,14 +211,10 @@ export const getInterpolate = createSelector(getDrillsState,
 export const getPast = createSelector(getDrillsState,
     (drillsState) => drillsState.past);
 
-export const getDrawState = createSelector(getEntities, getKeyframeIndex, getInterpolate, getPast,
-    (entities, keyframeIndex, interpolate, past) => ({ entities, keyframeIndex, interpolate, past }));
-// this.store.select((state) => state.drillsState.entities),
-// this.store.select((state) => state.drillsState.interpolate),
-// this.store.select((state) => state.drillsState.past),
-// this.store.select((state) => state.drillsState.keyframeIndex)
-
 export const getSelectedEntityId = createSelector(getDrillsState, (drillsState) => drillsState.selectedEntityId);
+
+export const getDrawState = createSelector(getEntities, getKeyframeIndex, getInterpolate, getActions, getPast, getSelectedEntityId,
+    (entities, keyframeIndex, interpolate, actions, past) => ({ entities, keyframeIndex, interpolate, actions, past }));
 
 export const maxAnimationLength = createSelector(getDrillsState, (drillsState) => Math.max(...drillsState.actions.map((action) => action.animation.endFrame)));
 
@@ -240,7 +239,8 @@ export const getCurrentAction = createSelector(currentEntity, getKeyframeIndex, 
 // }
 
 export function actionForKeyframe(entity: Entity, actions: EntityAction[], keyframeIndex: number): EntityAction | undefined {
-    return actions.find((action) => action.animation.startFrame > keyframeIndex && action.animation.endFrame < keyframeIndex && action.entityIds.has(entity.id));
+    return actions.find((action) =>
+        action.animation.startFrame < keyframeIndex && action.animation.endFrame >= keyframeIndex && action.entityIds.has(entity.id));
 }
 
 export function percentOfAction(entity: Entity, actions: EntityAction[], keyframe: number): number | null {
@@ -258,21 +258,21 @@ export function percentOfActionHelper(action: EntityAction, keyframe: number): n
     return (action.animation.endFrame - keyframe) / (action.animation.endFrame - action.animation.startFrame);
 }
 
-export function startPositionForAction(entity: Entity, keyframe: number): Position {
+export function startPositionForAction(entity: Entity, actions: EntityAction[], keyframe: number): Position {
     // Sort the actions from start to finish
-    const sorted = entity.actions.sort((a, b) => b.animation.endFrame - a.animation.endFrame);
+    const sorted = actions.filter((action) => action.entityIds.has(entity.id)).sort((a, b) => b.animation.endFrame - a.animation.endFrame);
     // Find the most recent action.
     for (const action of sorted) {
         if (action.animation.endFrame <= keyframe) {
-            return action.animation.end;
+            return action.animation.endPos;
         }
     }
     return entity.start;
 }
 
-export function positionForKeyFrame(entity: Entity, keyframe: number): Position | null {
-    const lastPosition = startPositionForAction(entity, keyframe);
-    const currentAction = actionForKeyframe(entity, keyframe);
+export function positionForKeyFrame(entity: Entity, actions: EntityAction[], keyframe: number): Position | null {
+    const lastPosition = startPositionForAction(entity, actions, keyframe);
+    const currentAction = actionForKeyframe(entity, actions, keyframe);
     if (!currentAction) {
         // We are not currently in an action, so just return the position of the most recent action.
         return lastPosition;
@@ -282,13 +282,13 @@ export function positionForKeyFrame(entity: Entity, keyframe: number): Position 
     const length = currentAction.animation.endFrame - currentAction.animation.startFrame;
     const index = keyframe - currentAction.animation.startFrame;
     return {
-        posX: lastPosition.posX + (currentAction.animation.end.posX - lastPosition.posX) / length * index,
-        posY: lastPosition.posY + (currentAction.animation.end.posY - lastPosition.posY) / length * index,
+        posX: lastPosition.posX + (currentAction.animation.endPos.posX - lastPosition.posX) / length * index,
+        posY: lastPosition.posY + (currentAction.animation.endPos.posY - lastPosition.posY) / length * index,
     };
 }
 
 let nextEntityId = 0;
-let nextAnimationId = 0;
+let nextActionId = 0;
 export function drillsReducer(state: DrillsState = initialState, action: ActionTypes): DrillsState {
     switch (action.type) {
         case ADD_ENTITY: {
@@ -303,13 +303,13 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
             if (!keyframeEntity) {
                 return state;
             }
-            const keyframeAction = actionForKeyframe(keyframeEntity, keyframe);
+            const keyframeAction = actionForKeyframe(keyframeEntity, state.actions, keyframe);
             if (!keyframeAction) {
                 keyframeEntity.start = action.position;
             } else {
                 // If this was done at the end of the entity, just move that.
                 if (keyframe === keyframeAction.animation.endFrame) {
-                    keyframeAction.animation.end = action.position;
+                    keyframeAction.animation.endPos = action.position;
                 } else {
                     // Otherwise, interpolate from the position of the entity at that keyframe to the end.
                     // TODO combine this with for loop above.
@@ -318,11 +318,11 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
                         console.warn('wtf?');
                         return state;
                     }
-                    const startPosition = startPositionForAction(keyframeEntity, keyframe);
+                    const startPosition = startPositionForAction(keyframeEntity, state.actions, keyframe);
                     const animationLength = keyframeAction.animation.endFrame - keyframeAction.animation.startFrame;
                     const newY = (action.position.posY - startPosition.posY) / percent + startPosition.posY;
                     const newX = (action.position.posX - startPosition.posX) / percent + startPosition.posX;
-                    keyframeAction.animation.end = { posX: newX, posY: newY };
+                    keyframeAction.animation.endPos = { posX: newX, posY: newY };
                 }
             }
             return {
@@ -335,28 +335,20 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
             };
         }
         case ADD_ACTION: {
-            const newEntity = state.entities[action.entityId];
             const framesToAdd = state.interpolate === 0 ? 1 : state.interpolate;
-            // if ( {
-            //     // We aren't actually adding an action, just moving it.
-            //     // Note that we can only move the end of actions.
-            //     const currentAction = actionForKeyframe(newEntity, state.keyframeIndex);
-            //     if (currentAction) {
-            //         currentAction.animation.endPos = action.endPos;
-            //     } else {
-            //         newEntity.start = action.endPos;
-            //     }
-            newEntity.actions.push({
+            const newAction = {
                 type: PlayerActions.MOVE,
-                animation: { end: action.endPos, startFrame: state.keyframeIndex, endFrame: state.keyframeIndex + framesToAdd }
-            });
+                animation: {
+                    endPos: action.endPos,
+                    startFrame: state.keyframeIndex,
+                    endFrame: state.keyframeIndex + framesToAdd,
+                },
+                actionId: nextActionId++,
+                entityIds: new Set([action.entityId]),
+            };
             return {
-                ...state, entities: state.entities.map((entity) => {
-                    if (entity.id === action.entityId) {
-                        return newEntity;
-                    }
-                    return entity;
-                }),
+                ...state,
+                actions: [...state.actions, newAction],
                 keyframeIndex: state.keyframeIndex + framesToAdd,
                 interpolate: 1,
                 past: framesToAdd,
@@ -382,8 +374,18 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
             if (state.selectedEntityId === action.id && action.keyframe === undefined) {
                 return state;
             }
-            const actionEntity = currentEntity.projector(state);
-            const currentAction: EntityAction = getCurrentAction.projector(actionEntity, state.keyframeIndex - (action.keyframe || 0));
+            const actionEntity = currentEntity({ drillsState: state });
+            if (actionEntity == null) {
+                throw new Error('Failed to select entity');
+            }
+            const currentAction = actionForKeyframe(
+                actionEntity, state.actions, state.keyframeIndex - (action.keyframe || 0));
+            if (!currentAction) {
+                return {
+                    ...state,
+                    selectedEntityId: action.id,
+                };
+            }
             return {
                 ...state,
                 selectedEntityId: action.id,
@@ -392,21 +394,18 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
             };
         }
         case CHANGE_ACTION: {
-            const actionEntity = currentEntity.projector(state);
-            const currentAction = getCurrentAction.projector(actionEntity, state.keyframeIndex);
+            const currentAction: EntityAction | undefined = state.actions.find((tempAction) => tempAction.actionId === action.actionId);
+            if (currentAction == null) {
+                throw new Error('Tried to change action when none was selected');
+            }
             return {
-                ...state, entities: state.entities.map((entity) => {
-                    if (entity === actionEntity) {
+                ...state, actions: state.actions.map((tempAction) => {
+                    if (tempAction.actionId === currentAction.actionId) {
                         return {
-                            ...entity, actions: entity.actions.map((tempAction) => {
-                                if (tempAction === currentAction) {
-                                    return { ...tempAction, type: action.actionType };
-                                }
-                                return tempAction;
-                            })
+                            ...tempAction, type: tempAction.type,
                         };
                     }
-                    return entity;
+                    return tempAction;
                 })
             };
         }
@@ -415,40 +414,33 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
                 console.error('Tried to change action when no entity was selected');
                 return state;
             }
-            const actionEntity = state.entities[state.selectedEntityId];
-            const currentAction: EntityAction | undefined = getCurrentAction.projector(actionEntity, state.keyframeIndex);
+            // const actionEntity = state.entities[state.selectedEntityId];
+            const currentAction: EntityAction | undefined = state.actions.find((tempAction) => tempAction.actionId === action.actionId);
             console.log(currentAction);
-            if (!currentAction) {
-                return state;
+            if (currentAction == null) {
+                throw new Error('Tried to change action when none was selected');
             }
             const endDistance = currentAction.animation.endFrame - action.end;
             return {
-                ...state, entities: state.entities.map((entity) => {
-                    if (entity === actionEntity) {
-                        return {
-                            ...entity, actions: entity.actions.map((tempAction) => {
-                                if (tempAction === currentAction) {
-                                    // tempAction.animation.start = action.start;
-                                    tempAction.animation.endFrame = action.end;
-                                } else {
-                                    if (tempAction.animation.startFrame >= currentAction.animation.startFrame) {
-                                        tempAction.animation.startFrame -= endDistance;
-                                        tempAction.animation.endFrame -= endDistance;
-                                    } else {
-                                        console.log('not current action: ', tempAction.animation.startFrame, currentAction.animation.startFrame);
-                                    }
-                                    // else if (tempAction.animation.end < currentAction.animation.end) {
-                                    //     tempAction.animation.start -= startDistance;
-                                    //     tempAction.animation.end -= startDistance;
-                                    // }
-                                }
-                                // tempAction.animation.start = Math.max(0, tempAction.animation.start);
-                                tempAction.animation.endFrame = Math.max(0, tempAction.animation.endFrame);
-                                return { ...tempAction };
-                            })
-                        };
+                ...state, actions: state.actions.map((tempAction) => {
+                    if (tempAction.actionId === action.actionId) {
+                        // tempAction.animation.start = action.start;
+                        tempAction.animation.endFrame = action.end;
+                    } else {
+                        if (tempAction.animation.startFrame >= currentAction.animation.startFrame) {
+                            tempAction.animation.startFrame -= endDistance;
+                            tempAction.animation.endFrame -= endDistance;
+                        } else {
+                            console.log('not current action: ', tempAction.animation.startFrame, currentAction.animation.startFrame);
+                        }
+                        // else if (tempAction.animation.end < currentAction.animation.end) {
+                        //     tempAction.animation.start -= startDistance;
+                        //     tempAction.animation.end -= startDistance;
+                        // }
                     }
-                    return entity;
+                    // tempAction.animation.start = Math.max(0, tempAction.animation.start);
+                    tempAction.animation.endFrame = Math.max(0, tempAction.animation.endFrame);
+                    return { ...tempAction };
                 }),
                 keyframeIndex: currentAction.animation.endFrame,
                 past: currentAction.animation.endFrame - currentAction.animation.startFrame,

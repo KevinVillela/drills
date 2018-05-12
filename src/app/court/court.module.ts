@@ -2,7 +2,6 @@ import { NgModule, Pipe, PipeTransform } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CourtComponent } from './court.component';
 import { ModelModule } from '../model/model.module';
-import { EntityModule } from '../entity/entity.module';
 import { MatSliderModule, MatButtonModule } from '@angular/material';
 import { IconService } from './icons';
 
@@ -20,7 +19,6 @@ export class ArrayPipe implements PipeTransform {
 @NgModule({
   imports: [
     CommonModule,
-    EntityModule,
     MatSliderModule,
     MatButtonModule
   ],

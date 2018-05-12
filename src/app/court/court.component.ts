@@ -52,7 +52,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private async drawEntity(entity: Entity, pos: Position | null, offset = 0) {
+  private async drawEntity(entity: Entity, actions: EntityAction[], pos: Position | null, offset = 0) {
     if (!pos) {
       return;
     }
@@ -62,12 +62,12 @@ export class CourtComponent implements OnInit, AfterViewInit {
     }
     svg.left = pos.posX;
     svg.top = pos.posY;
-    const action = actionForKeyframe(entity, this.keyframeIndex - offset);
+    const action = actionForKeyframe(entity, actions, this.keyframeIndex - offset);
     if (action && entity.type === 'volleyball') {
       const size = this.getSize(action, this.keyframeIndex - offset);
       // console.log(size);
       svg.scale((size / 72) / 5);
-      const percent = (percentOfAction(entity, this.keyframeIndex - offset) || 0);
+      const percent = (percentOfAction(entity, actions, this.keyframeIndex - offset) || 0);
       if (this.shouldRotateHelper(action)) {
         svg.rotate(`+${1080 * percent}`);
         // this.rotate(entity, offset, svg);
@@ -105,7 +105,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
     // }
   }
 
-  private rotate(entity: Entity, offset: number, svg: fabric.Path): void {
+  private rotate(entity: Entity, actions: EntityAction[], offset: number, svg: fabric.Path): void {
     const id = getId(entity, offset);
     if (this.isAnimating.get(id)) {
       return;
@@ -120,13 +120,13 @@ export class CourtComponent implements OnInit, AfterViewInit {
       easing: (t) => t,
       // easing: function (t, b, c, d) { return c * t / d + b },
       abort: () => {
-        return !this.shouldRotate(entity, offset);
+        return !this.shouldRotate(entity, actions, offset);
       }
     });
   }
 
-  private shouldRotate(entity: Entity, offset: number): boolean {
-    const action = actionForKeyframe(entity, this.keyframeIndex - offset);
+  private shouldRotate(entity: Entity, actions: EntityAction[], offset: number): boolean {
+    const action = actionForKeyframe(entity, actions, this.keyframeIndex - offset);
     return this.shouldRotateHelper(action);
   }
 
@@ -207,20 +207,20 @@ export class CourtComponent implements OnInit, AfterViewInit {
       //   this.store.select((state) => state.drillsState.past),
       //   this.store.select((state) => state.drillsState.keyframeIndex))
       this.store.select(getDrawState)
-        .subscribe(({ entities, interpolate, past }) => {
+        .subscribe(({ entities, interpolate, actions, past }) => {
           this.canvas.clear();
           const allEntityIds = new Set<string>();
           this.canvas.setBackgroundColor('sandybrown');
           entities.forEach((entity, idx) => {
             for (let i = 1; i <= past; i++) {
-              this.drawEntity(entity, this.getPos(entity, i), i);
+              this.drawEntity(entity, actions, this.getPos(entity, actions, i), i);
               allEntityIds.add(getId(entity, i));
             }
             for (let i = 0; i < interpolate; i++) {
-              this.drawEntity(entity, this.getPos(entity, -i), -i);
+              this.drawEntity(entity, actions, this.getPos(entity, actions, -i), -i);
               allEntityIds.add(getId(entity, -i));
             }
-            this.drawEntity(entity, this.getPos(entity));
+            this.drawEntity(entity, actions, this.getPos(entity, actions));
             allEntityIds.add(getId(entity, 0));
           });
           // this.iconService.getIconsToDelete(allEntityIds).forEach((icon) => {
@@ -231,9 +231,9 @@ export class CourtComponent implements OnInit, AfterViewInit {
     });
   }
 
-  getPos(entity: Entity, minus = 0): Position | null {
+  getPos(entity: Entity, actions: EntityAction[], minus = 0): Position | null {
     if (this.keyframeIndex >= minus) {
-      const pos = positionForKeyFrame(entity, this.keyframeIndex - minus);
+      const pos = positionForKeyFrame(entity, actions, this.keyframeIndex - minus);
       if (!pos) {
         return null;
       }
@@ -265,7 +265,6 @@ export class CourtComponent implements OnInit, AfterViewInit {
       // PLAYER has a PlayerActions.WAIT enum, too.
       this.store.dispatch(new AddEntity({
         start: { posX: event.offsetX, posY: event.offsetY },
-        actions: [],
         type: type as EntityType,
         icon,
       }));
