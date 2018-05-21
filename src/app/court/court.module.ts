@@ -1,11 +1,14 @@
-import { NgModule, Pipe, PipeTransform } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { CourtComponent } from './court.component';
-import { ModelModule } from '../model/model.module';
-import { MatSliderModule, MatButtonModule } from '@angular/material';
-import { IconService } from './icons';
+import {CommonModule} from '@angular/common';
+import {NgModule, Pipe, PipeTransform} from '@angular/core';
+import {MatButtonModule, MatSliderModule} from '@angular/material';
 
-@Pipe({ name: 'array' })
+import {FlyoutModule} from '../flyout/flyout.module';
+import {ModelModule} from '../model/model.module';
+
+import {CourtComponent} from './court.component';
+import {IconService} from './icons';
+
+@Pipe({name: 'array'})
 export class ArrayPipe implements PipeTransform {
   transform(value, args: string[]): any {
     const res: number[] = [];
@@ -20,10 +23,12 @@ export class ArrayPipe implements PipeTransform {
   imports: [
     CommonModule,
     MatSliderModule,
-    MatButtonModule
+    MatButtonModule,
+    FlyoutModule,
   ],
   providers: [IconService],
   declarations: [CourtComponent, ArrayPipe],
   exports: [CourtComponent, ArrayPipe],
 })
-export class CourtModule { }
+export class CourtModule {
+}

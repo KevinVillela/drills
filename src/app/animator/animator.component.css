@@ -1,0 +1,22 @@
+:host {
+  display: flex;
+  flex-direction: column;
+}
+
+div {
+  display: flex;
+  align-items: center;
+}
+
+drills-court {
+  display: block;
+}
+
+drills-legend{
+  display: block;
+  width: 40px;
+}
+
+button {
+  width: 20px;
+}
