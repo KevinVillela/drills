@@ -6,9 +6,21 @@ import {bindCallback} from 'rxjs/observable/bindCallback';
 import {zip} from 'rxjs/observable/zip';
 import {combineLatest, map, mapTo, merge, mergeMap, tap, withLatestFrom} from 'rxjs/operators';
 
-import {DeleteEntity, getId, getSelectedEntityId, PossessSelected, SelectEntity, SetPosition, AddEntity, AddAction, DeleteAction, getCurrentAction} from '../model/model';
-import {DrillsState, Entity, EntityType, EntityAction} from '../model/types';
-import { COURT_SIZE } from './court.component';
+import {
+  AddAction,
+  AddEntity,
+  DeleteAction,
+  DeleteEntity,
+  getCurrentAction,
+  getId,
+  getSelectedEntityId,
+  PossessSelected,
+  SelectEntity,
+  SetPosition
+} from '../model/model';
+import {AnimationEnd, DrillsState, Entity, EntityAction, EntityType} from '../model/types';
+
+import {COURT_SIZE} from './court.component';
 
 @Injectable()
 export class IconService {
@@ -18,35 +30,27 @@ export class IconService {
   private selectedEntityId?: number;
 
   constructor(private readonly store: Store<{drillsState: DrillsState}>) {
-    this.store.select(getSelectedEntityId).subscribe((val) => {
-      this.selectedEntityId = val;
-    });
-    this.store.select(getCurrentAction).subscribe((val) => {
-      this.currentAction = val;
-    });
-    const callbacks = [
-      'volleyball', 'player_white', 'player_blue', 'player_yellow', 'player_green'
-    ].map((url) => {
-      return (bindCallback(fabric.loadSVGFromURL) as any)(`assets/${url}.svg`)
-          .pipe(map(([objects, options]) => {
-            const svg = fabric.util.groupSVGElements(objects, options);
-            svg.scaleToWidth(24);
-            svg.scaleToHeight(24);
-            return {url, svg};
-          }));
-    });
+    this.store.select(getSelectedEntityId).subscribe((val) => { this.selectedEntityId = val; });
+    this.store.select(getCurrentAction).subscribe((val) => { this.currentAction = val; });
+    const callbacks =
+        [ 'volleyball', 'player_white', 'player_blue', 'player_yellow', 'player_green' ].map(
+            (url) => {
+              return (bindCallback(fabric.loadSVGFromURL) as any)(`assets/${url}.svg`)
+                  .pipe(map(([ objects, options ]) => {
+                    const svg = fabric.util.groupSVGElements(objects, options);
+                    svg.scaleToWidth(24);
+                    svg.scaleToHeight(24);
+                    return {url, svg};
+                  }));
+            });
     zip(...callbacks).subscribe((assets: {url: string, svg: string}[]) => {
       const tempMap = new Map<string, fabric.Path>();
-      assets.forEach((asset) => {
-        tempMap.set(asset.url, asset.svg);
-      });
+      assets.forEach((asset) => { tempMap.set(asset.url, asset.svg); });
       this.iconMap.next(tempMap);
     });
   }
 
-  getIcons() {
-    return this.iconMap.asObservable();
-  }
+  getIcons() { return this.iconMap.asObservable(); }
 
   entityIdForSvg(svg: fabric.Path): string|undefined {
     let ret: string|undefined;
@@ -62,7 +66,7 @@ export class IconService {
     const id = getId(entity, offset);
     const icon = this.entityIconMap.get(id);
     if (icon) {
-      return Promise.resolve({svg: icon, cached: true});
+      return Promise.resolve({svg : icon, cached : true});
     }
     const newIcon = this.iconMap.getValue().get(entity.icon);
     if (!newIcon) {
@@ -78,18 +82,18 @@ export class IconService {
         res.strokeWidth = 50;
         res.originX = 'center';
         res.originY = 'center';
-        res.onSelect = () => {
-          this.store.dispatch(new SelectEntity(entity.id));
-        };
-        res.onSelect = () => {
-          this.store.dispatch(new SelectEntity(entity.id));
-        };
+        res.onSelect = () => { this.store.dispatch(new SelectEntity(entity.id)); };
+        res.onSelect = () => { this.store.dispatch(new SelectEntity(entity.id)); };
         res.on('drop', (event) => {
           const type = event.e.dataTransfer.getData('type');
           const iconData = event.e.dataTransfer.getData('icon');
           if (Object.values(EntityType).includes(type)) {
-            const pos = {posX: event.e.offsetX, posY: event.e.offsetY};
-            this.store.dispatch(new AddEntity({start: pos, type: type as EntityType, icon: iconData}, entity.id));
+            const pos: AnimationEnd = {
+              type : 'POSITION',
+              endPos : {posX : event.e.offsetX, posY : event.e.offsetY}
+            };
+            this.store.dispatch(new AddEntity(
+                {start : pos, type : type as EntityType, icon : iconData}, entity.id));
           } else {
             console.error('Drag event with invalid type: ' + type);
           }
@@ -108,22 +112,22 @@ export class IconService {
         });
         res.on('mousedown', (event) => {
           if (event.button === 3) { // Right-click.
-          console.log('right down!');
-          if (this.selectedEntityId == null || this.selectedEntityId === entity.id) {
-            if (!this.currentAction) {
-              // TODO support this.
-              console.error('Tried to delete action when none was selected!');
-              return;
+            console.log('right down!');
+            if (this.selectedEntityId == null || this.selectedEntityId === entity.id) {
+              if (!this.currentAction) {
+                // TODO support this.
+                console.error('Tried to delete action when none was selected!');
+                return;
+              }
+              this.store.dispatch(new DeleteAction(this.currentAction.actionId));
+            } else {
+              this.store.dispatch(
+                  new AddAction({type : 'ENTITY', entityId : entity.id}, entity.id));
             }
-            this.store.dispatch(new DeleteAction(this.currentAction.actionId));
-          } else {
-          this.store.dispatch(new AddAction(
-            {type: 'ENTITY', entityId: entity.id}, entity.id));
           }
-        }
         });
         this.entityIconMap.set(id, res);
-        resolve({svg: res, cached: false});
+        resolve({svg : res, cached : false});
       });
     });
     return promise;

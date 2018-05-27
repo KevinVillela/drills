@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore';
-import {Observable} from 'rxjs';
+import {Observable} from 'rxjs/Observable';
 
 import {DrillFocus, DrillsState, Drill, Animation} from '../model/types';
 import { Store } from '@ngrx/store';
@@ -63,7 +63,12 @@ export class EditDrillComponent implements OnInit {
           if (!drill) {
             return;
           }
-          this.store.dispatch(new LoadAnimation(drill.animations[0]));
+          // this.store.dispatch(new LoadAnimation(drill.animations[0]));
+          this.store.dispatch(new LoadAnimation({
+            entities: [],
+            actions: [],
+            possessions: [],
+          }));
           this.form.get('name')!.setValue(drill.name);
           this.form.get('description')!.setValue(drill.description);
           this.form.get('minLevel')!.setValue(drill.minLevel);

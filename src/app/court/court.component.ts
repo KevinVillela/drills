@@ -1,4 +1,13 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, HostListener, Input, OnInit, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  HostListener,
+  Input,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import {ChangeDetectionStrategy} from '@angular/core';
 import {MatInputBase} from '@angular/material';
 import {Store} from '@ngrx/store';
@@ -8,20 +17,43 @@ import {Observable} from 'rxjs/Observable';
 import {combineLatest as combineLatestStatic} from 'rxjs/observable/combineLatest';
 import {combineLatest, map, mapTo, merge, mergeMap, tap, withLatestFrom} from 'rxjs/operators';
 
-import {AddAction, AddEntity, currentEntity, DeleteEntity, getDrawState, getEntities, getId, getSelectedEntityId, maxAnimationLength, NextFrame, percentOfAction, percentOfActionHelper, SelectEntity, SetPosition} from '../model/model';
-import {BallActions,  DrillsState, Entity, EntityAction, EntityType, Position} from '../model/types';
+import {actionForKeyframe, AnimationService} from '../model/animation';
+import {
+  AddAction,
+  AddEntity,
+  currentEntity,
+  DeleteEntity,
+  getDrawState,
+  getEntities,
+  getId,
+  getSelectedEntityId,
+  maxAnimationLength,
+  NextFrame,
+  percentOfAction,
+  percentOfActionHelper,
+  SelectEntity,
+  SetPosition
+} from '../model/model';
+import {
+  AnimationEnd,
+  BallActions,
+  DrillsState,
+  Entity,
+  EntityAction,
+  EntityType,
+  Position
+} from '../model/types';
 
 import {IconService} from './icons';
-import { AnimationService, actionForKeyframe } from '../model/animation';
 
 export const COURT_SIZE = 400;
 export const COURT_BORDER = 50;
 
 @Component({
-  selector: 'drills-court',
-  templateUrl: './court.component.html',
-  styleUrls: ['./court.component.css'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  selector : 'drills-court',
+  templateUrl : './court.component.html',
+  styleUrls : [ './court.component.css' ],
+  changeDetection : ChangeDetectionStrategy.OnPush
 })
 export class CourtComponent implements OnInit, AfterViewInit {
   currentEntity: Entity|undefined;
@@ -34,10 +66,10 @@ export class CourtComponent implements OnInit, AfterViewInit {
   /** A map from entity-offset combo to if it is animating or not. */
   private readonly isAnimating = new Map<string, boolean>();
 
-  constructor(
-      private readonly el: ElementRef, private readonly store: Store<{drillsState: DrillsState}>,
-      private readonly cd: ChangeDetectorRef, private readonly iconService: IconService,
-    private readonly animationService: AnimationService) {}
+  constructor(private readonly el: ElementRef,
+              private readonly store: Store<{drillsState: DrillsState}>,
+              private readonly cd: ChangeDetectorRef, private readonly iconService: IconService,
+              private readonly animationService: AnimationService) {}
 
   ngOnInit() {
     this.cd.markForCheck();
@@ -46,22 +78,15 @@ export class CourtComponent implements OnInit, AfterViewInit {
       this.cd.detectChanges();
     });
     this.entities = this.store.select(getEntities);
-    this.store.select(state => state.drillsState.interpolate).subscribe(val => {
-      this.interpolate = val;
-    });
-    this.store.select(state => state.drillsState.past).subscribe(val => {
-      this.past = val;
-    });
-    this.store.select(getSelectedEntityId).subscribe(val => {
-      this.selectedEntityId = val;
-    });
-    this.store.select(currentEntity).subscribe(entity => {
-      this.currentEntity = entity;
-    });
+    this.store.select(state => state.drillsState.interpolate)
+        .subscribe(val => { this.interpolate = val; });
+    this.store.select(state => state.drillsState.past).subscribe(val => { this.past = val; });
+    this.store.select(getSelectedEntityId).subscribe(val => { this.selectedEntityId = val; });
+    this.store.select(currentEntity).subscribe(entity => { this.currentEntity = entity; });
   }
 
-  private async drawEntity(
-      entity: Entity, actions: EntityAction[], pos: Position|null, offset = 0) {
+  private async drawEntity(entity: Entity, actions: EntityAction[], pos: Position|null,
+                           offset = 0) {
     if (!pos) {
       return;
     }
@@ -93,14 +118,10 @@ export class CourtComponent implements OnInit, AfterViewInit {
       // svg.scale(.1);
     }
     if (entity.id === this.selectedEntityId) {
-      svg.getObjects().forEach(object => {
-        object.set({strokeWidth: 8, stroke: 'yellow'});
-      });
+      svg.getObjects().forEach(object => { object.set({strokeWidth : 8, stroke : 'yellow'}); });
       this.canvas.setActiveObject(svg);
     } else {
-      svg.getObjects().forEach(object => {
-        object.set({strokeWidth: 1, stroke: 'black'});
-      });
+      svg.getObjects().forEach(object => { object.set({strokeWidth : 1, stroke : 'black'}); });
     }
     // if (!cached) {
     this.canvas.add(svg);
@@ -113,17 +134,13 @@ export class CourtComponent implements OnInit, AfterViewInit {
       return;
     }
     this.isAnimating.set(id, true);
-    svg.animate({angle: '-=360'}, {
-      duration: Infinity,
-      onChange: () => this.canvas.renderAll(),
-      onComplete: () => {
-        this.isAnimating.set(id, false);
-      },
-      easing: t => t,
+    svg.animate({angle : '-=360'}, {
+      duration : Infinity,
+      onChange : () => this.canvas.renderAll(),
+      onComplete : () => { this.isAnimating.set(id, false); },
+      easing : t => t,
       // easing: function (t, b, c, d) { return c * t / d + b },
-      abort: () => {
-        return !this.shouldRotate(entity, actions, offset);
-      }
+      abort : () => !this.shouldRotate(entity, actions, offset)
     });
   }
 
@@ -153,11 +170,11 @@ export class CourtComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas('c', {
-      backgroundColor: 'red',
-      width: COURT_SIZE / 2 + COURT_BORDER * 2,
-      height: COURT_SIZE + COURT_BORDER * 2,
-      fireRightClick: true,
-      stopContextMenu: true
+      backgroundColor : 'red',
+      width : COURT_SIZE / 2 + COURT_BORDER * 2,
+      height : COURT_SIZE + COURT_BORDER * 2,
+      fireRightClick : true,
+      stopContextMenu : true
     });
     this.resetCanvas();
     this.canvas.setBackgroundColor('sandybrown');
@@ -168,8 +185,11 @@ export class CourtComponent implements OnInit, AfterViewInit {
         const type = event.e.dataTransfer.getData('type');
         const icon = event.e.dataTransfer.getData('icon');
         if (Object.values(EntityType).includes(type)) {
-          const pos = {posX: event.e.offsetX, posY: event.e.offsetY};
-          this.store.dispatch(new AddEntity({start: pos, type: type as EntityType, icon}));
+          const pos: AnimationEnd = {
+            type : 'POSITION',
+            endPos : {posX : event.e.offsetX, posY : event.e.offsetY}
+          };
+          this.store.dispatch(new AddEntity({start : pos, type : type as EntityType, icon}));
         } else {
           console.error('Drag event with invalid type: ' + type);
         }
@@ -182,20 +202,20 @@ export class CourtComponent implements OnInit, AfterViewInit {
         if (id !== undefined) {
           const parts = id.split('-');
           const {entityId,
-                 offset} = {entityId: parseInt(parts[0], 10), offset: parseInt(parts[1], 10)};
+                 offset} = {entityId : parseInt(parts[0], 10), offset : parseInt(parts[1], 10)};
           this.store.dispatch(new SelectEntity(entityId, offset));
         }
       }
     });
     this.canvas.on('mouse:down', event => {
-      if (event.button === 3) {  // Right-click.
+      if (event.button === 3) { // Right-click.
         if (event.target && event.target.dropHandler) {
           console.log('dropped on object, so not dealing with it here');
           return;
         }
         if (this.selectedEntityId !== undefined) {
           this.store.dispatch(new AddAction(
-              {type: 'POSITION', endPos: {posX: event.e.offsetX, posY: event.e.offsetY}}));
+              {type : 'POSITION', endPos : {posX : event.e.offsetX, posY : event.e.offsetY}}));
         }
       } else if (event.button === 1) {
         // Left-click;
@@ -224,9 +244,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
     //   if (entityObject) {
     //   }
     // });
-    this.store.select(getDrawState).subscribe(() => {
-      console.log('draw!');
-    });
+    this.store.select(getDrawState).subscribe(() => { console.log('draw!'); });
     setTimeout(() => this.cd.markForCheck(), 100);
     this.iconService.getIcons().subscribe(icons => {
       if (icons.size === 0) {
@@ -253,7 +271,8 @@ export class CourtComponent implements OnInit, AfterViewInit {
           this.drawEntity(entity, actions, this.getPos(entities, entity, actions));
           allEntityIds.add(getId(entity, 0));
         });
-        // this.iconService.getIconsToDelete(allEntityIds).forEach((icon) => {
+        // this.iconService.getIconsToDelete(allEntityIds).forEach((icon) =>
+        // {
         //   this.canvas.remove(icon);
         // })
         this.canvas.renderAll();
@@ -264,19 +283,30 @@ export class CourtComponent implements OnInit, AfterViewInit {
   private resetCanvas() {
     this.canvas.clear();
     // Boundary lines
-    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER, COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
-    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER], {stroke: 'black'}));
-    // this.canvas.add(new fabric.Line([COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
-    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_SIZE + COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
+    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER,
+    // COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
+    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER, COURT_SIZE /
+    // 2 + COURT_BORDER, COURT_BORDER], {stroke: 'black'})); this.canvas.add(new
+    // fabric.Line([COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER, COURT_SIZE / 2
+    // + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
+    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_SIZE + COURT_BORDER,
+    // COURT_SIZE / 2 + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke:
+    // 'black'}));
     this.canvas.add(new fabric.Rect({
-      width: COURT_SIZE / 2, height: COURT_SIZE,
-      left: COURT_BORDER, top: COURT_BORDER,
-      stroke: 'black',
-      fill: '',
+      width : COURT_SIZE / 2,
+      height : COURT_SIZE,
+      left : COURT_BORDER,
+      top : COURT_BORDER,
+      stroke : 'black',
+      fill : '',
     }));
     // Net line
-    this.canvas.add(new fabric.Line([COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER + COURT_SIZE / 2, COURT_SIZE / 2 + COURT_BORDER],
-    {strokeDashArray: [5, 3], stroke: 'black'}));
+    this.canvas.add(new fabric.Line(
+        [
+          COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER + COURT_SIZE / 2,
+          COURT_SIZE / 2 + COURT_BORDER
+        ],
+        {strokeDashArray : [ 5, 3 ], stroke : 'black'}));
   }
 
   getPos(entities: Entity[], entity: Entity, actions: EntityAction[], minus = 0): Position|null {
@@ -293,17 +323,15 @@ export class CourtComponent implements OnInit, AfterViewInit {
     return null;
   }
 
-  @HostListener('dragover', ['$event'])
+  @HostListener('dragover', [ '$event' ])
   onDragOver(event: DragEvent) {
     event.preventDefault();
   }
 
-  trackByIdx(index: number): number {
-    return index;
-  }
+  trackByIdx(index: number): number { return index; }
 
   async export() {
-    const gif = new (window as any).GIF({workers: 10, quality: 10});
+    const gif = new (window as any).GIF({workers : 10, quality : 10});
 
     const canvas = document.querySelector('canvas');
     if (!canvas) {
@@ -311,15 +339,13 @@ export class CourtComponent implements OnInit, AfterViewInit {
     }
 
     let length = 0;
-    this.store.select(maxAnimationLength).subscribe(val => {
-      length = val;
-    });
+    this.store.select(maxAnimationLength).subscribe(val => { length = val; });
     const context = canvas.getContext('2d');
     if (!context) {
       throw new Error('Unable to get context');
     }
     for (let i = 0; i < length; i++) {
-      gif.addFrame(context.getImageData(0, 0, 800, 800), {delay: 30});
+      gif.addFrame(context.getImageData(0, 0, 800, 800), {delay : 30});
       this.store.dispatch(new NextFrame());
       await delay(10);
     }
@@ -328,16 +354,12 @@ export class CourtComponent implements OnInit, AfterViewInit {
       // gif.addFrame(canvas.getContext('2d'), { delay: 2000 });
       // or copy the pixels from a canvas context
 
-      gif.on('finished', function(blob) {
-        window.open(URL.createObjectURL(blob));
-      });
+      gif.on('finished', function(blob) { window.open(URL.createObjectURL(blob)); });
 
       gif.render();
     }, 10);
   }
 }
 async function delay(milliseconds: number) {
-  return new Promise<void>(resolve => {
-    setTimeout(resolve, milliseconds);
-  });
+  return new Promise<void>(resolve => { setTimeout(resolve, milliseconds); });
 }

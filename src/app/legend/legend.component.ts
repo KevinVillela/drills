@@ -23,6 +23,6 @@ export class LegendComponent implements OnInit {
 
   onDragEnd(event: DragEvent, type: EntityType): void {
     console.log('dragend');
-    console.info(event.dataTransfer.dropEffect);
+    console.log(event.dataTransfer.dropEffect);
   }
 }
