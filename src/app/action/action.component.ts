@@ -4,7 +4,8 @@ import {Store} from '@ngrx/store';
 import {Observable} from 'rxjs/Observable';
 import {map, take} from 'rxjs/operators';
 
-import {BallActions, DeleteAction, ChangeAction, ChangeActionEnd, currentEntity, Entity, EntityAction, EntityActionType, EntityType, getCurrentAction, PlayerActions} from '../model/model';
+import {DeleteAction, ChangeAction, ChangeActionEnd, currentEntity,  getCurrentAction} from '../model/model';
+import {BallActions, Entity, EntityAction, EntityActionType, EntityType, PlayerActions} from '../model/types';
 
 @Component({
   selector: 'drills-action',
@@ -27,12 +28,10 @@ export class ActionComponent implements OnInit {
                                    return [];
                                  }
                                  if (entity.type === EntityType.VOLLEYBALL) {
-                                   return Object.keys(BallActions);
+                                   return Object.keys(BallActions) as BallActions[];
                                  }
-                                 return Object.keys(PlayerActions);
-                               }),
-                               map((actions) => actions.map(
-                                       (action) => action.toLowerCase() as EntityActionType)));
+                                 return Object.keys(PlayerActions) as PlayerActions[];
+                               }));
     this.start = this.currentAction.pipe((map((action) => {
       if (!action) {
         return 0;

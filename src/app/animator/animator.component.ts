@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import {MatSliderChange} from '@angular/material/slider';
 import {Store} from '@ngrx/store';
 import {BehaviorSubject} from 'rxjs/BehaviorSubject';
@@ -6,7 +6,8 @@ import {Observable} from 'rxjs/Observable';
 import {combineLatest} from 'rxjs/observable/combineLatest';
 import {interval} from 'rxjs/observable/interval';
 import {filter, map, switchMap, take} from 'rxjs/operators';
-import {DrillsState, getPast, InterpolateChange, maxAnimationLength, NextFrame, PastChange, SpeedChange, UpdateKeyframeIndex} from '../model/model';
+import {getPast, InterpolateChange, maxAnimationLength, NextFrame, PastChange, SpeedChange, UpdateKeyframeIndex} from '../model/model';
+import {DrillsState} from '../model/types';
 
 @Component({
   selector: 'drills-animator',

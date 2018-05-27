@@ -5,146 +5,22 @@
 import {Action, createSelector, MemoizedSelector} from '@ngrx/store';
 import {InitialState} from '@ngrx/store/src/models';
 import {last} from 'rxjs/operators';
+
+import {actionForKeyframe, hasPossessionAtKeyframe, losesPossession, startPositionForAction, entityWithId} from './animation';
 import {sampleState} from './json';
-
-export enum BallActions {
-  SET = 'set',
-  SPIKE = 'spike',
-  BUMP = 'bump',
-  PICK_UP = 'pick_up'
-}
-
-export enum PlayerActions {
-  JUMP = 'jump',
-  MOVE = 'move'
-}
-
-export type EntityActionType = BallActions|PlayerActions;
-
-export interface AnimationEndPosition {
-  type: 'POSITION';
-  endPos: Position;
-}
-
-export interface AnimationEndEntity {
-  type: 'ENTITY';
-  entityId: number;
-}
-
-export type AnimationEnd = AnimationEndPosition|AnimationEndEntity;
-
-// Each frame is a function of the Entities and Actions that are defined in the state.
-//
-// The first frame is decided by the explicit starting position of each entity.
-//
-// The next frame is decided by going through each action and filtering out those that don't have a
-// start and end time that encompasses that frame. For the remaining actions, the position will be
-// interpolated by looking at the end position of the action and how long the action is. For
-// example, if the action is to bump the ball 10 feet to the left in 5 frames, then the ball will
-// move 2 feet to the left.
-//
-// Some actions will behave differently for different entities. For example, bumping a ball will
-// move the ball, but the player will stay still and move only their arms.
-//
-// An action will always have a well-defined start and end time. However, it is tricky to define
-// where that action starts and ends.
-//
-
-//
-// Every action has a source (which must be of type player), a type (spike, set, jump, shuffle,
-// etc...), and a target (a position or entity).
-export interface EntityAction {
-  sourceId: number;
-  type: BallActions|PlayerActions;
-  /** The starting keyframe of the action, exclusive. */
-  startFrame: number;
-  /** The ending keyframe of the action, exclusive. */
-  endFrame: number;
-  /**
-   * We decided to go away from this and make it a separate action, but we might bring it back.
-   * The starting keyframe for the player to prepare to take the action, e.g.
-   * moving to the ball to set it. If unset, there is no player set for this action yet.
-   */
-  // playerStartFrame?: number;
-  end: AnimationEnd;
-  actionId: number;
-  entityIds: Set<number>;
-}
-
-export interface Possession {
-  ballId: number;
-  playerId: number;
-  startFrame: number;
-  /** An end frame, if the possession is relenquished. If it is not, then this is undefined. */
-  endFrame?: number;
-}
-
-export enum DrillFocus {
-  PASSING = 'Passing',
-  SETTING = 'Setting',
-  HITTING = 'Hitting',
-  DEFENSE = 'Defense',
-  BLOCKING = 'Blocking',
-  TRANSITION = 'Transition',
-  READING = 'Reading',
-  SERVING = 'Serving'
-}
-
-export interface DrillsState {
-  // State about the drill itself
-  entities: Entity[];
-  actions: EntityAction[];
-  possessions: Possession[];
-  name: string;
-  description: string;
-  /** A number between 1 and 5 representing how difficult the drill is. */
-  level: number;
-  focus: DrillFocus[];
-  /** An average duration of the drill, in minutes  */
-  duration: number;
-  /** A number between 1 and 5 indicating which phase the drill happens. */
-  phase: number;
-  /** The minimum number of players required for this drill */
-  minPlayers: number;
-  /** The maximum number of players for this drill */
-  maxPlayers: number;
-  /** The ideal number of players for this drill */
-  idealPlayers: number;
-
-  // Playback state (could probably be a different store)
-  /** The currently selected entity ID, if any. */
-  selectedEntityId?: number;
-  keyframeIndex: number;
-  speed: number;
-  interpolate: number;
-  past: number;
-}
-
-export enum EntityType {
-  VOLLEYBALL = 'volleyball',
-  PLAYER = 'player'
-}
-
-export interface Position {
-  posX: number;
-  posY: number;
-}
-
-export interface Entity {
-  id: number;
-  type: EntityType;
-  icon: string;
-  start: Position;
-}
+import {Position} from './types';
+import {Animation, AnimationEnd, BallActions, DrillsState, Entity, EntityAction, EntityActionType, EntityType, PlayerActions, Possession} from './types';
 
 export const initialState: DrillsState = {
-  entities: [],
-  actions: [],
-  possessions: [],
+  animations: [{
+    entities: [],
+    actions: [],
+    possessions: [],
+  }],
   name: 'Sample Drill',
   description: '',
-  /** A number between 1 and 5 representing how difficult the drill is. */
-  level: 1,
+  minLevel: 1,
+  maxLevel: 1,
   focus: [],
   /** An average duration of the drill, in minutes  */
   duration: 10,
@@ -172,14 +48,14 @@ export class AddEntity implements Action {
   readonly type = ADD_ENTITY;
   constructor(
       readonly entity: {type: EntityType; icon: string; start: Position},
-      readonly possessionPlayerId?: number) {}
+      readonly targetId?: number) {}
 }
 
 export const ADD_ACTION = 'ADD_ACTION';
 
 export class AddAction implements Action {
   readonly type = ADD_ACTION;
-  constructor(readonly end: AnimationEnd, readonly possessionPlayerId?: number) {}
+  constructor(readonly end: AnimationEnd, readonly targetId?: number) {}
 }
 
 export const DELETE_ACTION = 'DELETE_ACTION';
@@ -242,7 +118,7 @@ export const SELECT_ENTITY = 'SELECT_ENTITY';
 
 export class SelectEntity implements Action {
   readonly type = SELECT_ENTITY;
-  constructor(readonly id?: number, readonly keyframe?: number) {}
+  constructor(readonly id: number, readonly keyframe?: number) {}
 }
 
 export const CHANGE_ACTION = 'CHANGE_ACTION';
@@ -261,24 +137,36 @@ export class ChangeActionEnd implements Action {
 
 export const POSSESS_SELECTED = 'POSSESS_SELECTED';
 
+/** Currently unused */
 export class PossessSelected implements Action {
   readonly type = POSSESS_SELECTED;
   constructor(readonly entityId: number) {}
 }
+
+export const LOAD_ANIMATION = 'LOAD_ANIMATION';
+
+export class LoadAnimation implements Action {
+  readonly type = LOAD_ANIMATION;
+  constructor(readonly animation: Animation) {}
+}
+
 export type ActionTypes =
-    |ChangeAction|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|NextFrame|
-    DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|PossessSelected|DeleteAction;
+    LoadAnimation|ChangeAction|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|
+    NextFrame|DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
 
 export const getDrillsState = createSelector(
     (state: {drillsState: DrillsState}) => state.drillsState,
     (drillsState: DrillsState) => drillsState);
 
-export const getEntities = createSelector(getDrillsState, drillsState => drillsState.entities);
+export const getEntities =
+    createSelector(getDrillsState, drillsState => drillsState.animations[0].entities);
 
 export const getKeyframeIndex =
     createSelector(getDrillsState, drillsState => drillsState.keyframeIndex);
 
-export const getActions = createSelector(getDrillsState, drillsState => drillsState.actions);
+export const getAnimations = createSelector(getDrillsState, drillsState => drillsState.animations);
+export const getActions =
+    createSelector(getDrillsState, drillsState => drillsState.animations[0].actions);
 
 export const getInterpolate =
     createSelector(getDrillsState, drillsState => drillsState.interpolate);
@@ -293,17 +181,21 @@ export const getDrawState = createSelector(
     (entities, keyframeIndex, interpolate, actions, past) =>
         ({entities, keyframeIndex, interpolate, actions, past}));
 
-export const maxAnimationLength = createSelector(
-    getDrillsState, drillsState => Math.max(...drillsState.actions.map(action => action.endFrame)));
+export const maxAnimationLength =
+    createSelector(getActions, actions => maxAnimationLengthHelper(actions));
 
+function maxAnimationLengthHelper(actions: EntityAction[]) {
+  return Math.max(...actions.map(action => action.endFrame));
+}
 export const currentEntity: MemoizedSelector<{drillsState: DrillsState}, Entity|undefined> =
-    createSelector(getDrillsState, drillsState => {
-      if (drillsState.selectedEntityId == null) {
-        return undefined;
-      }
-      return drillsState.entities[drillsState.selectedEntityId];
-    });
+    createSelector(getDrillsState, drillsState => currentEntityHelper(drillsState));
 
+function currentEntityHelper(drillsState: DrillsState) {
+  if (drillsState.selectedEntityId == null) {
+    return undefined;
+  }
+  return drillsState.animations[0].entities[drillsState.selectedEntityId];
+}
 export const getCurrentAction = createSelector(
     currentEntity, getKeyframeIndex, getActions, (entity, keyframeIndex, actions) => {
       if (entity) {
@@ -315,13 +207,6 @@ export const getCurrentAction = createSelector(
 // function totalAnimationLength(entity: Entity): number {
 //     return Math.max(...entity.actions.map((action) => action.endFrame));
 // }
-
-export function actionForKeyframe(
-    entity: Entity, actions: EntityAction[], keyframeIndex: number): EntityAction|undefined {
-  return actions.find(
-      action => action.startFrame < keyframeIndex && action.endFrame >= keyframeIndex &&
-          action.entityIds.has(entity.id));
-}
 
 export function percentOfAction(entity: Entity, actions: EntityAction[], keyframe: number): number|
     null {
@@ -339,116 +224,86 @@ export function percentOfActionHelper(action: EntityAction, keyframe: number): n
   return (action.endFrame - keyframe) / (action.endFrame - action.startFrame);
 }
 
-function startPositionForAction(
-    entities: Entity[], entity: Entity, actions: EntityAction[], keyframe: number): Position {
-  // Sort the actions from start to finish
-  const sorted = actions.filter(action => action.entityIds.has(entity.id))
-                     .sort((a, b) => b.endFrame - a.endFrame);
-  // Find the most recent action.
-  for (const action of sorted) {
-    if (action.endFrame <= keyframe) {
-      if (action.end.type === 'POSITION') {
-        return action.end.endPos;
-      } else {
-        return startPositionForAction(entities, entities[action.end.entityId], actions, keyframe);
-      }
-    }
+function getNextEntityId(animation: Animation) {
+  let nextEntityId = 0;
+  while (animation.entities.some(entity => entity.id === nextEntityId)) {
+    nextEntityId++;
   }
-  return entity.start;
+  return nextEntityId;
+}
+function getNextActionId(animation: Animation) {
+  // "Ensure" that the Entity and Action IDs don't collide.
+  let nextActionId = 1000;
+  while (animation.actions.some((action) => action.actionId === nextActionId)) {
+    nextActionId++;
+  }
+  return nextActionId;
 }
 
-function hasPossessionAtKeyframe(keyframe: number, possession: Possession) {
-  return possession.startFrame <= keyframe &&
-      (possession.endFrame === undefined || possession.endFrame >= keyframe);
-}
-
-export function positionForKeyFrame(
-    entities: Entity[], entity: Entity, actions: EntityAction[], keyframe: number): Position|null {
-  const lastPosition = startPositionForAction(entities, entity, actions, keyframe);
-  const currentAction = actionForKeyframe(entity, actions, keyframe);
-  if (!currentAction) {
-    // We are not currently in an action, so just return the position of the most recent action.
-    return lastPosition;
-  }
-  // Finally, compute the interpolation and return the keyframe.
-  // const length = currentaction.end - currentaction.start;
-  const length = currentAction.endFrame - currentAction.startFrame;
-  const index = keyframe - currentAction.startFrame;
-
-  let actionEndPosition: Position|null = null;
-  switch (currentAction.end.type) {
-    case 'POSITION':
-      actionEndPosition = currentAction.end.endPos;
-      break;
-    case 'ENTITY':
-      actionEndPosition = positionForKeyFrame(
-          entities, entities[currentAction.end.entityId], actions, currentAction.endFrame);
-      break;
-    default:
-      return ((assertUnreachable: never) => ({posX: 0, posY: 0}))(currentAction.end);
-  }
-  if (!actionEndPosition) {
-    throw new Error('Unable to get end position for action');
-  }
-  return {
-    posX: lastPosition.posX + (actionEndPosition.posX - lastPosition.posX) / length * index,
-    posY: lastPosition.posY + (actionEndPosition.posY - lastPosition.posY) / length * index
-  };
-}
-
-let nextEntityId = 0;
-// "Ensure" that the Entity and Action IDs don't collide.
-let nextActionId = 1000;
 export function drillsReducer(state: DrillsState = initialState, action: ActionTypes): DrillsState {
+  const animation = state.animations[0];
   switch (action.type) {
+    case LOAD_ANIMATION:
+      return {...state, animations: [action.animation]};
     case ADD_ENTITY: {
-      while (state.entities.some(entity => entity.id === nextEntityId)) {
-        nextEntityId++;
-      }
-      if (action.possessionPlayerId != null) {
+      const nextEntityId = getNextEntityId(animation);
+      if (action.targetId != null) {
+        const target = entityWithId(animation.entities, action.targetId);
+        if (!target) {
+          console.error('Tried to give add entity on top of unknown entity ID', action.targetId);
+          return state;
+        }
+        const possession = {
+          startFrame: state.keyframeIndex,
+          playerId: target.type === EntityType.PLAYER ? target.id : nextEntityId,
+          ballId: target.type === EntityType.PLAYER ? nextEntityId : target.id,
+        };
         return {
           ...state,
-          selectedEntityId: state.entities.length,
-          entities: state.entities.concat([{...action.entity, id: nextEntityId}]),
-          possessions: [
-            ...state.possessions, {
-              playerId: action.possessionPlayerId,
-              ballId: nextEntityId,
-              startFrame: state.keyframeIndex
-            }
-          ],
+          selectedEntityId: animation.entities.length,
+          animations: [{
+            ...animation,
+            entities: animation.entities.concat([{...action.entity, id: nextEntityId}]),
+            possessions: [
+              ...animation.possessions,
+              possession,
+            ],
+          }],
         };
       }
       return {
         ...state,
-        selectedEntityId: state.entities.length,
-        entities: state.entities.concat([{...action.entity, id: nextEntityId}])
+        selectedEntityId: animation.entities.length,
+        animations: [{
+          ...animation,
+          entities: animation.entities.concat([{...action.entity, id: nextEntityId}]),
+        }],
       };
     }
     case SET_POSITION: {
       // 1. Find the new position that we want to move the entity to.
       const keyframe = state.keyframeIndex - action.offset;
-      const keyframeEntity = state.entities.find(entity => entity.id === action.entityId);
+      const keyframeEntity = animation.entities.find(entity => entity.id === action.entityId);
       if (!keyframeEntity) {
         console.error('Tried to set position for null keyframe entity');
         return state;
       }
-      const keyframeAction = actionForKeyframe(keyframeEntity, state.actions, keyframe);
+      const keyframeAction = actionForKeyframe(keyframeEntity, animation.actions, keyframe);
       // Collect all the entities that we need to update.
       // TODO make the starting position optionally be of type Entity as well.
       const attachedEntities: Entity[] = [keyframeEntity];
-      for (const tempPossession of state.possessions) {
+      for (const tempPossession of animation.possessions) {
         if (!hasPossessionAtKeyframe(keyframe, tempPossession)) {
           continue;
         }
         if (tempPossession.ballId === keyframeEntity.id) {
-          const entity = state.entities[tempPossession.playerId];
+          const entity = animation.entities[tempPossession.playerId];
           if (!entity) {
             throw new Error(`Possession by unknown player with ID ${tempPossession.playerId}`);
           }
           attachedEntities.push(entity);
         } else if (tempPossession.playerId === keyframeEntity.id) {
-          const entity = state.entities[tempPossession.ballId];
+          const entity = animation.entities[tempPossession.ballId];
           if (!entity) {
             throw new Error(`Possession of unknown ball with ID ${tempPossession.ballId}`);
           }
@@ -459,7 +314,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
         // This means we are just setting the start position. Make sure we do so for this entity and
         // any possessions.
         for (const entity of attachedEntities) {
-          const tempAction = actionForKeyframe(entity, state.actions, keyframe);
+          const tempAction = actionForKeyframe(entity, animation.actions, keyframe);
           if (!tempAction) {
             entity.start = {posX: action.position.posX, posY: action.position.posY};
             continue;
@@ -472,13 +327,16 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
         }
         return {
           ...state,
-          entities: state.entities.map(entity => {
-            const shouldUpdate = attachedEntities.find((attached) => attached === entity);
-            if (shouldUpdate) {
-              return {...shouldUpdate};
-            }
-            return entity;
-          })
+          animations: [{
+            ...animation,
+            entities: animation.entities.map(entity => {
+              const shouldUpdate = attachedEntities.find((attached) => attached === entity);
+              if (shouldUpdate) {
+                return {...shouldUpdate};
+              }
+              return entity;
+            })
+          }],
         };
       } else {
         // Interpolate from the position of the entity at that keyframe to the end.
@@ -488,13 +346,12 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
           console.warn('wtf?');
           return state;
         }
-        const startPosition =
-            startPositionForAction(state.entities, keyframeEntity, state.actions, keyframe);
+        const startPosition = startPositionForAction(keyframeEntity, keyframe, state);
         const animationLength = keyframeAction.endFrame - keyframeAction.startFrame;
         const newY = (action.position.posY - startPosition.posY) / percent + startPosition.posY;
         const newX = (action.position.posX - startPosition.posX) / percent + startPosition.posX;
         for (const entity of attachedEntities) {
-          const tempAction = actionForKeyframe(entity, state.actions, keyframe);
+          const tempAction = actionForKeyframe(entity, animation.actions, keyframe);
           if (!tempAction) {
             entity.start = {posX: newX, posY: newY};
             continue;
@@ -508,86 +365,104 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       }
       return {
         ...state,
-        entities: state.entities.map(entity => {
-          if (entity.id === action.entityId) {
-            return keyframeEntity;
-          }
-          return entity;
-        })
+        animations: [{
+          ...animation,
+          entities: animation.entities.map(entity => {
+            if (entity.id === action.entityId) {
+              return keyframeEntity;
+            }
+            return entity;
+          })
+        }],
       };
     }
     case ADD_ACTION: {
       if (state.selectedEntityId == null) {
         throw new Error('Tried to add action, but no entities were selected');
       }
-      const framesToAdd = state.interpolate === 0 ? 1 : state.interpolate;
+      const selectedEntity = animation.entities[state.selectedEntityId];
+      if (!selectedEntity) {
+        throw new Error(
+            'Tried to add action, but entity of ID ' + state.selectedEntityId + ' does not exist');
+      }
+      const framesToAdd = state.interpolate === 0 ? 10 : state.interpolate;
       const newAction: EntityAction = {
-        type: PlayerActions.MOVE,
+        type: selectedEntity.type === EntityType.PLAYER ? PlayerActions.MOVE : BallActions.SPIKE,
         sourceId: state.selectedEntityId,
         end: action.end,
         startFrame: state.keyframeIndex,
         endFrame: state.keyframeIndex + framesToAdd,
-        actionId: nextActionId++,
-        entityIds: new Set([state.selectedEntityId])
+        actionId: getNextActionId(animation),
+        entityIds: [state.selectedEntityId]
       };
       const ret = {
         ...state,
-        actions: [...state.actions, newAction],
+        animations: [{
+          ...animation,
+          actions: [...animation.actions, newAction],
+        }],
         keyframeIndex: state.keyframeIndex + framesToAdd,
         interpolate: 1,
         past: framesToAdd,
       };
-      /* TODO support moving with the ball */
-      ret.possessions = ret.possessions.map((possession) => {
+      // Remove the possession from the player holding the ball.
+      ret.animations[0].possessions = ret.animations[0].possessions.map((possession) => {
         if (hasPossessionAtKeyframe(state.keyframeIndex, possession)) {
-          if (possession.playerId === action.possessionPlayerId) {
-            /* This is a new action, but the player is still keeping possession. */
-            return possession;
-          } else if (
-              possession.playerId === state.selectedEntityId ||
-              possession.ballId === state.selectedEntityId) {
-            return {...possession, endFrame: state.keyframeIndex};
+          if (possession.playerId === action.targetId ||
+              possession.playerId === state.selectedEntityId) {
+            // Check if this is an action that removes possession.
+            if (losesPossession(newAction)) {
+              return {...possession, endFrame: state.keyframeIndex + 1};
+            }
           }
         }
         return possession;
       });
-      if (action.possessionPlayerId != null) {
-        ret.possessions = [
-          ...ret.possessions.filter(
-              (possession) => possession.startFrame !== state.keyframeIndex ||
-                  possession.playerId !== action.possessionPlayerId),
-          {
-            playerId: action.possessionPlayerId,
-            ballId: state.selectedEntityId,
-            startFrame: state.keyframeIndex
-          }
-        ];
+      if (action.targetId != null) {
+        const target = animation.entities[action.targetId];
+        if (!target) {
+          console.error('Tried to target unknown entity with ID', action.targetId);
+          return state;
+        }
+        const newPossession = {
+          startFrame: state.keyframeIndex,
+          playerId: target.type === EntityType.PLAYER ? target.id : state.selectedEntityId,
+          ballId: target.type === EntityType.PLAYER ? state.selectedEntityId : target.id,
+        };
+        if (action.targetId != null) {
+          ret.animations[0].possessions = [
+            ...ret.animations[0].possessions.filter(
+                (possession) => possession.startFrame !== state.keyframeIndex ||
+                    possession.playerId !== action.targetId),
+                    newPossession,
+          ];
+        }
       }
       return ret;
     }
     case DELETE_ACTION:
-      return {
-        ...state,
-        actions: state.actions.filter((tempAction) => tempAction.actionId !== action.actionId),
-        keyframeIndex: Math.min(maxAnimationLength.projector(state), state.keyframeIndex),
-      };
-    case POSSESS_SELECTED:
-      // NOTE: CURRENTLY UNUSED
-      if (state.selectedEntityId == null) {
-        throw new Error('Tried to take possession with no entity selected');
+      const currentAction =
+          animation.actions.find((tempAction) => tempAction.actionId === action.actionId);
+      if (!currentAction) {
+        console.error('Tried to delete invalid action of id', action.actionId);
+        return state;
       }
       return {
         ...state,
-        possessions: [
-          ...state.possessions.filter(
-              (possession) => possession.startFrame !== state.keyframeIndex ||
-                  possession.playerId !== action.entityId),
-          {
-            playerId: action.entityId,
-            ballId: state.selectedEntityId,
-            startFrame: state.keyframeIndex
-          }
-        ]
+        animations: [{
+          ...animation,
+          actions:
+              animation.actions.filter((tempAction) => tempAction.actionId !== action.actionId),
+          possessions: animation.possessions.filter((possession) => {
+            if (hasPossessionAtKeyframe(currentAction.endFrame, possession) &&
+                (currentAction.entityIds.includes(possession.ballId) ||
+                 currentAction.entityIds.includes(possession.playerId))) {
+              return false;
+            }
+            return true;
+          }),
+        }],
+        keyframeIndex: Math.min(maxAnimationLengthHelper(animation.actions), state.keyframeIndex),
       };
     case UPDATE_KEYFRAME_INDEX:
       return {...state, keyframeIndex: action.index};
@@ -598,23 +473,32 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     case PAST_CHANGE:
       return {...state, past: action.val};
     case NEXT_FRAME:
-      const maxLength = maxAnimationLength.projector(state);
+      const maxLength = maxAnimationLengthHelper(animation.actions);
       if (maxLength === 0) {
         return state;
       }
       return {...state, keyframeIndex: (state.keyframeIndex + 1) % (maxLength + 1)};
     case DELETE_ENTITY:
-      return {...state, entities: state.entities.filter(entity => entity.id !== action.entityId)};
+      return {
+        ...state,
+        animations: [{
+          ...animation,
+          entities: animation.entities.filter(entity => entity.id !== action.entityId),
+          actions: animation.actions.filter(
+              tempAction => tempAction.sourceId !== action.entityId &&
+                  !tempAction.entityIds.includes(action.entityId)),
+        }]
+      };
     case SELECT_ENTITY: {
       if (state.selectedEntityId === action.id && action.keyframe === undefined) {
         return state;
       }
-      const actionEntity = currentEntity({drillsState: state});
+      const actionEntity = animation.entities[action.id];
       if (actionEntity == null) {
         throw new Error('Failed to select entity');
       }
       const currentAction = actionForKeyframe(
-          actionEntity, state.actions, state.keyframeIndex - (action.keyframe || 0));
+          actionEntity, animation.actions, state.keyframeIndex - (action.keyframe || 0));
       if (!currentAction) {
         return {...state, selectedEntityId: action.id};
       }
@@ -627,18 +511,21 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     }
     case CHANGE_ACTION: {
       const currentAction: EntityAction|undefined =
-          state.actions.find(tempAction => tempAction.actionId === action.actionId);
+          animation.actions.find(tempAction => tempAction.actionId === action.actionId);
       if (currentAction == null) {
         throw new Error('Tried to change action when none was selected');
       }
       return {
         ...state,
-        actions: state.actions.map(tempAction => {
-          if (tempAction.actionId === currentAction.actionId) {
-            return {...tempAction, type: action.actionType};
-          }
-          return tempAction;
-        })
+        animations: [{
+          ...animation,
+          actions: animation.actions.map(tempAction => {
+            if (tempAction.actionId === currentAction.actionId) {
+              return {...tempAction, type: action.actionType};
+            }
+            return tempAction;
+          })
+        }]
       };
     }
     case CHANGE_ACTION_END: {
@@ -646,9 +533,8 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
         console.error('Tried to change action when no entity was selected');
         return state;
       }
-      // const actionEntity = state.entities[state.selectedEntityId];
       const currentAction: EntityAction|undefined =
-          state.actions.find(tempAction => tempAction.actionId === action.actionId);
+          animation.actions.find(tempAction => tempAction.actionId === action.actionId);
       console.log(currentAction);
       if (currentAction == null) {
         throw new Error('Tried to change action when none was selected');
@@ -656,26 +542,45 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       const endDistance = currentAction.endFrame - action.end;
       return {
         ...state,
-        actions: state.actions.map(tempAction => {
-          if (tempAction.actionId === action.actionId) {
-            // tempAction.start = action.start;
-            tempAction.endFrame = action.end;
-          } else {
-            if (tempAction.startFrame >= currentAction.startFrame) {
-              tempAction.startFrame -= endDistance;
-              tempAction.endFrame -= endDistance;
+        animations: [{
+          ...animation,
+          actions: animation.actions.map(tempAction => {
+            if (tempAction.actionId === action.actionId) {
+              // tempAction.start = action.start;
+              tempAction.endFrame = action.end;
             } else {
-              console.log('not current action: ', tempAction.startFrame, currentAction.startFrame);
+              if (tempAction.startFrame >= currentAction.startFrame) {
+                tempAction.startFrame -= endDistance;
+                tempAction.endFrame -= endDistance;
+              } else {
+                console.log(
+                    'not current action: ', tempAction.startFrame, currentAction.startFrame);
+              }
+              // else if (tempAction.end < currentAction.end) {
+              //     tempAction.start -= startDistance;
+              //     tempAction.end -= startDistance;
+              // }
             }
-            // else if (tempAction.end < currentAction.end) {
-            //     tempAction.start -= startDistance;
-            //     tempAction.end -= startDistance;
-            // }
-          }
-          // tempAction.start = Math.max(0, tempAction.start);
-          tempAction.endFrame = Math.max(0, tempAction.endFrame);
-          return {...tempAction};
-        }),
+            // tempAction.start = Math.max(0, tempAction.start);
+            tempAction.endFrame = Math.max(0, tempAction.endFrame);
+            return {...tempAction};
+          }),
+          // Move the possession back if necessary.
+          possessions: animation.possessions.map((tempPossession) => {
+            if (hasPossessionAtKeyframe(state.keyframeIndex, tempPossession) &&
+                (tempPossession.playerId === currentAction.sourceId ||
+                 tempPossession.ballId === currentAction.sourceId)) {
+              if (Object.values(PlayerActions).includes(currentAction.type)) {
+                return {...tempPossession, endFrame: currentAction.endFrame};
+              } else if (Object.values(BallActions).includes(currentAction.type)) {
+                return {...tempPossession, startFrame: currentAction.endFrame};
+              } else {
+                console.error('Action type not supported');
+              }
+            }
+            return tempPossession;
+          })
+        }],
         keyframeIndex: currentAction.endFrame,
         past: currentAction.endFrame - currentAction.startFrame
       };

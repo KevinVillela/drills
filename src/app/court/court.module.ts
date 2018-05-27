@@ -2,7 +2,6 @@ import {CommonModule} from '@angular/common';
 import {NgModule, Pipe, PipeTransform} from '@angular/core';
 import {MatButtonModule, MatSliderModule} from '@angular/material';
 
-import {FlyoutModule} from '../flyout/flyout.module';
 import {ModelModule} from '../model/model.module';
 
 import {CourtComponent} from './court.component';
@@ -24,7 +23,6 @@ export class ArrayPipe implements PipeTransform {
     CommonModule,
     MatSliderModule,
     MatButtonModule,
-    FlyoutModule,
   ],
   providers: [IconService],
   declarations: [CourtComponent, ArrayPipe],

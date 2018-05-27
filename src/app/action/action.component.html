@@ -1,6 +1,6 @@
 <mat-radio-group [ngModel]="(currentAction | async)?.type" (ngModelChange)="onActionTypeChange($event)">
   <mat-radio-button class="example-radio-button" *ngFor="let type of actionTypes | async" [value]="type">
-    {{type}}
+    {{type | lowercase}}
   </mat-radio-button>
 </mat-radio-group>
 <div>

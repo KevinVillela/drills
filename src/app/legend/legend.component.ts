@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { EntityType } from '../model/model';
+import { EntityType } from '../model/types';
 
 @Component({
   selector: 'drills-legend',
@@ -9,6 +9,7 @@ import { EntityType } from '../model/model';
 })
 export class LegendComponent implements OnInit {
 
+  readonly EntityType = EntityType;
   constructor() { }
 
   ngOnInit() {

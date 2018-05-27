@@ -6,14 +6,24 @@ import {bindCallback} from 'rxjs/observable/bindCallback';
 import {zip} from 'rxjs/observable/zip';
 import {combineLatest, map, mapTo, merge, mergeMap, tap, withLatestFrom} from 'rxjs/operators';
 
-import {DeleteEntity, DrillsState, Entity, getId, getSelectedEntityId, PossessSelected, SelectEntity, SetPosition, EntityType, AddEntity, AddAction} from '../model/model';
+import {DeleteEntity, getId, getSelectedEntityId, PossessSelected, SelectEntity, SetPosition, AddEntity, AddAction, DeleteAction, getCurrentAction} from '../model/model';
+import {DrillsState, Entity, EntityType, EntityAction} from '../model/types';
+import { COURT_SIZE } from './court.component';
 
 @Injectable()
 export class IconService {
   private readonly iconMap = new BehaviorSubject<Map<string, fabric.Path>>(new Map());
   private readonly entityIconMap = new Map<string, fabric.Path>();
+  private currentAction?: EntityAction;
+  private selectedEntityId?: number;
 
   constructor(private readonly store: Store<{drillsState: DrillsState}>) {
+    this.store.select(getSelectedEntityId).subscribe((val) => {
+      this.selectedEntityId = val;
+    });
+    this.store.select(getCurrentAction).subscribe((val) => {
+      this.currentAction = val;
+    });
     const callbacks = [
       'volleyball', 'player_white', 'player_blue', 'player_yellow', 'player_green'
     ].map((url) => {
@@ -60,6 +70,7 @@ export class IconService {
     }
     const promise = new Promise<{svg: fabric.Path, cached: boolean}>((resolve) => {
       newIcon.clone((res) => {
+        res.dropHandler = true;
         res.lockUniScaling = true;
         res.lockScalingX = true;
         res.lockScalingY = true;
@@ -88,8 +99,8 @@ export class IconService {
           // const posY = event.target.top;
           const posX = event.e.offsetX;
           const posY = event.e.offsetY;
-          // TODO don't hard code the height and width of the court.
-          if (posX > 400 || posY > 400) {
+          // TODO don't hardcode this. Right now it causes a circular dep.
+          if (posX > 350 || posY > 500) {
             this.store.dispatch(new DeleteEntity(entity.id));
           } else {
             this.store.dispatch(new SetPosition(entity.id, offset, {posX, posY}));
@@ -98,9 +109,18 @@ export class IconService {
         res.on('mousedown', (event) => {
           if (event.button === 3) { // Right-click.
           console.log('right down!');
+          if (this.selectedEntityId == null || this.selectedEntityId === entity.id) {
+            if (!this.currentAction) {
+              // TODO support this.
+              console.error('Tried to delete action when none was selected!');
+              return;
+            }
+            this.store.dispatch(new DeleteAction(this.currentAction.actionId));
+          } else {
           this.store.dispatch(new AddAction(
             {type: 'ENTITY', entityId: entity.id}, entity.id));
           }
+        }
         });
         this.entityIconMap.set(id, res);
         resolve({svg: res, cached: false});

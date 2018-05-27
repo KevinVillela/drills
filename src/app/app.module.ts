@@ -12,8 +12,9 @@ import {StoreDevtoolsModule} from '@ngrx/store-devtools';
 import {Router, RouterModule, Routes} from '@angular/router';
 
 const ROUTES: Routes = [
-  {path: '', component: EditDrillComponent, pathMatch: 'full'},
-  {path: ':id', component: EditDrillComponent},
+  {path: '', component: HomeComponent, pathMatch: 'full'},
+  {path: 'edit', component: EditDrillComponent, pathMatch: 'full'},
+  {path: 'edit/:id', component: EditDrillComponent, pathMatch: 'full'},
 ];
 
 @NgModule({
@@ -30,7 +31,10 @@ const ROUTES: Routes = [
       maxAge: 100,  // Retains last 100 states
     }),
     RouterModule.forRoot(ROUTES),
-    EditModule
+    EditModule,
+    HomeModule,
+    AngularFireModule.initializeApp(environment.firebase),
+    AngularFirestoreModule
   ],
   providers: [],
   bootstrap: [AppComponent]
@@ -58,4 +62,9 @@ import {LegendModule} from './legend/legend.module';
 import {drillsReducer} from './model/model';
 import {ModelModule} from './model/model.module'; import { EditDrillComponent } from './edit/edit.component';
 import { EditModule } from './edit/edit.module';
+import { HomeComponent } from '../src/app/home/home.component';
+import { HomeModule } from '../src/app/home/home.module';
+import { AngularFireModule } from 'angularfire2';
+import { environment } from '../environments/environment.prod';
+import { AngularFirestoreModule } from 'angularfire2/firestore';
 

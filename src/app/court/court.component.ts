@@ -8,10 +8,14 @@ import {Observable} from 'rxjs/Observable';
 import {combineLatest as combineLatestStatic} from 'rxjs/observable/combineLatest';
 import {combineLatest, map, mapTo, merge, mergeMap, tap, withLatestFrom} from 'rxjs/operators';
 
-import {SdFlyoutComponent} from '../flyout/flyout.component';
-import {actionForKeyframe, AddAction, AddEntity, BallActions, currentEntity, DeleteEntity, DrillsState, Entity, EntityAction, EntityType, getDrawState, getId, getSelectedEntityId, maxAnimationLength, NextFrame, percentOfAction, percentOfActionHelper, Position, positionForKeyFrame, SelectEntity, SetPosition} from '../model/model';
+import {AddAction, AddEntity, currentEntity, DeleteEntity, getDrawState, getEntities, getId, getSelectedEntityId, maxAnimationLength, NextFrame, percentOfAction, percentOfActionHelper, SelectEntity, SetPosition} from '../model/model';
+import {BallActions,  DrillsState, Entity, EntityAction, EntityType, Position} from '../model/types';
 
 import {IconService} from './icons';
+import { AnimationService, actionForKeyframe } from '../model/animation';
+
+export const COURT_SIZE = 400;
+export const COURT_BORDER = 50;
 
 @Component({
   selector: 'drills-court',
@@ -30,11 +34,10 @@ export class CourtComponent implements OnInit, AfterViewInit {
   /** A map from entity-offset combo to if it is animating or not. */
   private readonly isAnimating = new Map<string, boolean>();
 
-  @ViewChild(SdFlyoutComponent) private flyout: SdFlyoutComponent;
-
   constructor(
       private readonly el: ElementRef, private readonly store: Store<{drillsState: DrillsState}>,
-      private readonly cd: ChangeDetectorRef, private readonly iconService: IconService) {}
+      private readonly cd: ChangeDetectorRef, private readonly iconService: IconService,
+    private readonly animationService: AnimationService) {}
 
   ngOnInit() {
     this.cd.markForCheck();
@@ -42,7 +45,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
       this.keyframeIndex = val;
       this.cd.detectChanges();
     });
-    this.entities = this.store.select(state => state.drillsState.entities);
+    this.entities = this.store.select(getEntities);
     this.store.select(state => state.drillsState.interpolate).subscribe(val => {
       this.interpolate = val;
     });
@@ -69,7 +72,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
     svg.left = pos.posX;
     svg.top = pos.posY;
     const action = actionForKeyframe(entity, actions, this.keyframeIndex - offset);
-    if (action && entity.type === 'volleyball') {
+    if (action && entity.type === EntityType.VOLLEYBALL) {
       const size = this.getSize(action, this.keyframeIndex - offset);
       // console.log(size);
       svg.scale(size / 72 / 5);
@@ -77,6 +80,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
       if (this.shouldRotateHelper(action)) {
         svg.rotate(`+${1080 * percent}`);
         // this.rotate(entity, offset, svg);
+
       } else {
         svg.rotate('0');
       }
@@ -132,11 +136,11 @@ export class CourtComponent implements OnInit, AfterViewInit {
     if (!action) {
       return false;
     }
-    return action.type === 'spike' || action.type === 'bump';
+    return action.type === BallActions.SPIKE || action.type === BallActions.BUMP;
   }
 
   private getSize(action: EntityAction, keyframe: number): number {
-    if (action && (action.type === 'set' || action.type === 'bump')) {
+    if (action && (action.type === BallActions.SET || action.type === BallActions.BUMP)) {
       const percent = percentOfActionHelper(action, keyframe);
       if (!percent) {
         return 24;
@@ -150,16 +154,16 @@ export class CourtComponent implements OnInit, AfterViewInit {
   ngAfterViewInit() {
     this.canvas = new fabric.Canvas('c', {
       backgroundColor: 'red',
-      width: 400,
-      height: 400,
+      width: COURT_SIZE / 2 + COURT_BORDER * 2,
+      height: COURT_SIZE + COURT_BORDER * 2,
       fireRightClick: true,
       stopContextMenu: true
     });
-    // this.canvas.setBackgroundColor('red', this.canvas.renderAll.bind(this.canvas));
+    this.resetCanvas();
     this.canvas.setBackgroundColor('sandybrown');
     this.canvas.on('drop', (event) => {
-      if (event.target) {
-        console.log('dropped on object, so not dealing with it here');
+      if (event.target && event.target.dropHandler) {
+        console.log('dropped on object,', event.target, 'so not dealing with it here');
       } else {
         const type = event.e.dataTransfer.getData('type');
         const icon = event.e.dataTransfer.getData('icon');
@@ -172,7 +176,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
       }
     });
     this.canvas.on('mouse:dblclick', event => {
-      if (event.target) {
+      if (event.target && event.target.dropHandler) {
         const id = this.iconService.entityIdForSvg(event.target);
         console.log(id);
         if (id !== undefined) {
@@ -184,8 +188,8 @@ export class CourtComponent implements OnInit, AfterViewInit {
       }
     });
     this.canvas.on('mouse:down', event => {
-      if (event.button === 3) { // Right-click.
-        if (event.target) {
+      if (event.button === 3) {  // Right-click.
+        if (event.target && event.target.dropHandler) {
           console.log('dropped on object, so not dealing with it here');
           return;
         }
@@ -234,7 +238,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
       //   this.store.select((state) => state.drillsState.past),
       //   this.store.select((state) => state.drillsState.keyframeIndex))
       this.store.select(getDrawState).subscribe(({entities, interpolate, actions, past}) => {
-        this.canvas.clear();
+        this.resetCanvas();
         const allEntityIds = new Set<string>();
         this.canvas.setBackgroundColor('sandybrown');
         entities.forEach((entity, idx) => {
@@ -257,9 +261,27 @@ export class CourtComponent implements OnInit, AfterViewInit {
     });
   }
 
+  private resetCanvas() {
+    this.canvas.clear();
+    // Boundary lines
+    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER, COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
+    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER], {stroke: 'black'}));
+    // this.canvas.add(new fabric.Line([COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
+    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_SIZE + COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
+    this.canvas.add(new fabric.Rect({
+      width: COURT_SIZE / 2, height: COURT_SIZE,
+      left: COURT_BORDER, top: COURT_BORDER,
+      stroke: 'black',
+      fill: '',
+    }));
+    // Net line
+    this.canvas.add(new fabric.Line([COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER + COURT_SIZE / 2, COURT_SIZE / 2 + COURT_BORDER],
+    {strokeDashArray: [5, 3], stroke: 'black'}));
+  }
+
   getPos(entities: Entity[], entity: Entity, actions: EntityAction[], minus = 0): Position|null {
     if (this.keyframeIndex >= minus) {
-      const pos = positionForKeyFrame(entities, entity, actions, this.keyframeIndex - minus);
+      const pos = this.animationService.positionForKeyframe(entity, this.keyframeIndex - minus);
       if (!pos) {
         return null;
       }
