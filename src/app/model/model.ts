@@ -1,6 +1,6 @@
 // Things that don't work:
-// - Assigning possession to an entity that is already on the court. You can only give a ball
-//   to someone if you are dragging it in from the legend.
+// - Possessions can have a maximum or two entities, and one of these must be
+//   absolute positioned, although this is not enforced by the reducers yet.
 // - You can't remove possessions, once it is set it is permanent.
 import {Action, createSelector, MemoizedSelector} from '@ngrx/store';
 import {InitialState} from '@ngrx/store/src/models';
@@ -9,12 +9,15 @@ import {last} from 'rxjs/operators';
 import {
   actionForKeyframe,
   entityWithId,
+  entityWithIdOrDie,
+  getPossessions,
   hasPossessionAtKeyframe,
+  lastActionForKeyframe,
   losesPossession,
   startPositionForAction
 } from './animation';
 import {sampleState} from './json';
-import {Position} from './types';
+import {AnimationEndPosition, Position} from './types';
 import {
   Animation,
   AnimationEnd,
@@ -32,7 +35,6 @@ export const initialState: DrillsState = {
   animations : [ {
     entities : [],
     actions : [],
-    possessions : [],
   } ],
   name : 'Sample Drill',
   description : '',
@@ -83,7 +85,8 @@ export const SET_POSITION = 'SET_POSITION';
 
 export class SetPosition implements Action {
   readonly type = SET_POSITION;
-  constructor(readonly entityId: number, readonly offset: number, readonly position: Position) {}
+  constructor(readonly entityId: number, readonly offset: number,
+              readonly position: {posX: number, posY: number}) {}
 }
 
 export const UPDATE_KEYFRAME_INDEX = 'UPDATE_KEYFRAME_INDEX';
@@ -278,10 +281,6 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
         animations : [ {
           ...animation,
           entities : animation.entities.concat([ {...action.entity, id : nextEntityId} ]),
-          possessions : [
-            ...animation.possessions,
-            possession,
-          ],
         } ],
       };
     }
@@ -302,54 +301,27 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       console.error('Tried to set position for null keyframe entity');
       return state;
     }
-    const keyframeAction = actionForKeyframe(keyframeEntity, animation.actions, keyframe);
-    // Collect all the entities that we need to update.
-    // TODO make the starting position optionally be of type Entity as well.
-    const attachedEntities: Entity[] = [ keyframeEntity ];
-    for (const tempPossession of animation.possessions) {
-      if (!hasPossessionAtKeyframe(keyframe, tempPossession)) {
-        continue;
+    const keyframeAction = lastActionForKeyframe(keyframeEntity, animation.actions, keyframe);
+    if (keyframe === 0 || !keyframeAction) {
+      // This means we are just setting the start position.
+      let owningEntity: Entity = keyframeEntity;
+      if (keyframeEntity.start.type === 'ENTITY') {
+        owningEntity = entityWithIdOrDie(animation.entities, keyframeEntity.start.entityId);
       }
-      if (tempPossession.ballId === keyframeEntity.id) {
-        const entity = animation.entities[tempPossession.playerId];
-        if (!entity) {
-          throw new Error(`Possession by unknown player with ID ${tempPossession.playerId}`);
+      owningEntity.start = {
+        type : 'POSITION',
+        endPos : {
+          posX : action.position.posX,
+          posY : action.position.posY,
         }
-        attachedEntities.push(entity);
-      } else if (tempPossession.playerId === keyframeEntity.id) {
-        const entity = animation.entities[tempPossession.ballId];
-        if (!entity) {
-          throw new Error(`Possession of unknown ball with ID ${tempPossession.ballId}`);
-        }
-        attachedEntities.push(entity);
-      }
-    }
-    if (!keyframeAction) {
-      // This means we are just setting the start position. Make sure we do so for this entity and
-      // any possessions.
-      for (const entity of attachedEntities) {
-        const tempAction = actionForKeyframe(entity, animation.actions, keyframe);
-        if (!tempAction) {
-          entity.start = {
-            type : 'POSITION',
-            endPos : {posX : action.position.posX, posY : action.position.posY}
-          };
-          continue;
-        }
-        if (tempAction.end.type === 'POSITION') {
-          tempAction.end.endPos = {posX : action.position.posX, posY : action.position.posY};
-        } else {
-          // Don't do anything, this means that it was an entity with an attached position.
-        }
-      }
+      };
       return {
         ...state,
         animations : [ {
           ...animation,
           entities : animation.entities.map(entity => {
-            const shouldUpdate = attachedEntities.find((attached) => attached === entity);
-            if (shouldUpdate) {
-              return {...shouldUpdate};
+            if (entity === owningEntity) {
+              return {...owningEntity};
             }
             return entity;
           })
@@ -367,31 +339,49 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       const animationLength = keyframeAction.endFrame - keyframeAction.startFrame;
       const newY = (action.position.posY - startPosition.posY) / percent + startPosition.posY;
       const newX = (action.position.posX - startPosition.posX) / percent + startPosition.posX;
-      for (const entity of attachedEntities) {
-        const tempAction = actionForKeyframe(entity, animation.actions, keyframe);
-        if (!tempAction) {
-          entity.start = {type : 'POSITION', endPos : {posX : newX, posY : newY}};
-          continue;
-        }
-        if (tempAction.end.type === 'POSITION') {
-          tempAction.end.endPos = {posX : newX, posY : newY};
-        } else {
-          // Don't do anything, this means that it was an entity with an attached position.
+      const newPos = {posX : newX, posY : newY};
+      let owningEntity: Entity = keyframeEntity;
+      let owningAction: EntityAction|undefined = keyframeAction;
+      if (keyframeAction.end.type === 'POSITION') {
+        keyframeAction.end.endPos = newPos;
+      } else {
+        if (keyframeAction.end.type === 'ENTITY') {
+          owningEntity = entityWithIdOrDie(animation.entities, keyframeAction.end.entityId);
+          owningAction = actionForKeyframe(owningEntity, animation.actions, keyframe);
+          if (owningAction) {
+            if (owningAction.end.type === 'POSITION') {
+              owningAction.end.endPos = newPos;
+            } else {
+              throw new Error('wtf!!');
+            }
+          } else {
+            if (owningEntity.start.type === 'POSITION') {
+              owningEntity.start.endPos = newPos;
+            } else {
+              throw new Error('wtf??');
+            }
+          }
         }
       }
+      return {
+        ...state,
+        animations : [ {
+          ...animation,
+          entities : animation.entities.map(entity => {
+            if (entity === owningEntity) {
+              return {...owningEntity};
+            }
+            return entity;
+          }),
+          actions : animation.actions.map(tempAction => {
+            if (tempAction === owningAction) {
+              return owningAction;
+            }
+            return tempAction;
+          })
+        } ],
+      };
     }
-    return {
-      ...state,
-      animations : [ {
-        ...animation,
-        entities : animation.entities.map(entity => {
-          if (entity.id === action.entityId) {
-            return keyframeEntity;
-          }
-          return entity;
-        })
-      } ],
-    };
   }
   case ADD_ACTION: {
     if (state.selectedEntityId == null) {
@@ -410,7 +400,6 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       startFrame : state.keyframeIndex,
       endFrame : state.keyframeIndex + framesToAdd,
       actionId : getNextActionId(animation),
-      entityIds : [ state.selectedEntityId ]
     };
     const ret = {
       ...state,
@@ -419,40 +408,14 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
         actions : [...animation.actions, newAction ],
       } ],
       keyframeIndex : state.keyframeIndex + framesToAdd,
-      interpolate : 1,
+      interpolate : 0,
       past : framesToAdd,
     };
-    // Remove the possession from the player holding the ball.
-    ret.animations[0].possessions = ret.animations[0].possessions.map((possession) => {
-      if (hasPossessionAtKeyframe(state.keyframeIndex, possession)) {
-        if (possession.playerId === action.targetId ||
-            possession.playerId === state.selectedEntityId) {
-          // Check if this is an action that removes possession.
-          if (losesPossession(newAction)) {
-            return {...possession, endFrame : state.keyframeIndex + 1};
-          }
-        }
-      }
-      return possession;
-    });
     if (action.targetId != null) {
       const target = animation.entities[action.targetId];
       if (!target) {
         console.error('Tried to target unknown entity with ID', action.targetId);
         return state;
-      }
-      const newPossession = {
-        startFrame : state.keyframeIndex + framesToAdd,
-        playerId : target.type === EntityType.PLAYER ? target.id : state.selectedEntityId,
-        ballId : target.type === EntityType.PLAYER ? state.selectedEntityId : target.id,
-      };
-      if (action.targetId != null) {
-        ret.animations[0].possessions = [
-          ...ret.animations[0].possessions.filter(
-              (possession) => possession.startFrame !== state.keyframeIndex ||
-                              possession.playerId !== action.targetId),
-          newPossession,
-        ];
       }
     }
     return ret;
@@ -469,14 +432,6 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       animations : [ {
         ...animation,
         actions : animation.actions.filter((tempAction) => tempAction.actionId !== action.actionId),
-        possessions : animation.possessions.filter((possession) => {
-          if (hasPossessionAtKeyframe(currentAction.endFrame, possession) &&
-              (currentAction.entityIds.includes(possession.ballId) ||
-               currentAction.entityIds.includes(possession.playerId))) {
-            return false;
-          }
-          return true;
-        }),
       } ],
       keyframeIndex : Math.min(maxAnimationLengthHelper(animation.actions), state.keyframeIndex),
     };
@@ -501,9 +456,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       animations : [ {
         ...animation,
         entities : animation.entities.filter(entity => entity.id !== action.entityId),
-        actions :
-            animation.actions.filter(tempAction => tempAction.sourceId !== action.entityId &&
-                                                   !tempAction.entityIds.includes(action.entityId)),
+        actions : animation.actions.filter(tempAction => tempAction.sourceId !== action.entityId),
       } ]
     };
   case SELECT_ENTITY: {
@@ -581,21 +534,6 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
           tempAction.endFrame = Math.max(0, tempAction.endFrame);
           return {...tempAction};
         }),
-        // Move the possession back if necessary.
-        possessions : animation.possessions.map((tempPossession) => {
-          if (hasPossessionAtKeyframe(state.keyframeIndex, tempPossession) &&
-              (tempPossession.playerId === currentAction.sourceId ||
-               tempPossession.ballId === currentAction.sourceId)) {
-            if (Object.values(PlayerActions).includes(currentAction.type)) {
-              return {...tempPossession, endFrame : currentAction.endFrame};
-            } else if (Object.values(BallActions).includes(currentAction.type)) {
-              return {...tempPossession, startFrame : currentAction.endFrame};
-            } else {
-              console.error('Action type not supported');
-            }
-          }
-          return tempPossession;
-        })
       } ],
       keyframeIndex : currentAction.endFrame,
       past : currentAction.endFrame - currentAction.startFrame

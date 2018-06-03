@@ -89,8 +89,8 @@ export class IconService {
           const iconData = event.e.dataTransfer.getData('icon');
           if (Object.values(EntityType).includes(type)) {
             const pos: AnimationEnd = {
-              type : 'POSITION',
-              endPos : {posX : event.e.offsetX, posY : event.e.offsetY}
+              type : 'ENTITY',
+              entityId : entity.id,
             };
             this.store.dispatch(new AddEntity(
                 {start : pos, type : type as EntityType, icon : iconData}, entity.id));
@@ -114,12 +114,8 @@ export class IconService {
           if (event.button === 3) { // Right-click.
             console.log('right down!');
             if (this.selectedEntityId == null || this.selectedEntityId === entity.id) {
-              if (!this.currentAction) {
-                // TODO support this.
-                console.error('Tried to delete action when none was selected!');
-                return;
-              }
-              this.store.dispatch(new DeleteAction(this.currentAction.actionId));
+              this.store.dispatch(
+                new AddAction({type : 'POSITION', endPos : {posX : event.e.offsetX, posY : event.e.offsetY}}, entity.id));
             } else {
               this.store.dispatch(
                   new AddAction({type : 'ENTITY', entityId : entity.id}, entity.id));

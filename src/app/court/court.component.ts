@@ -41,7 +41,8 @@ import {
   Entity,
   EntityAction,
   EntityType,
-  Position
+  Position,
+  PlayerActions
 } from '../model/types';
 
 import {IconService} from './icons';
@@ -97,10 +98,15 @@ export class CourtComponent implements OnInit, AfterViewInit {
     svg.left = pos.posX;
     svg.top = pos.posY;
     const action = actionForKeyframe(entity, actions, this.keyframeIndex - offset);
-    if (action && entity.type === EntityType.VOLLEYBALL) {
+    if (action) {
       const size = this.getSize(action, this.keyframeIndex - offset);
-      // console.log(size);
-      svg.scale(size / 72 / 5);
+      // The volleyball behaves weirdly, so treat it special.
+      console.log(size);
+      if (entity.type === EntityType.VOLLEYBALL) {
+        svg.scale(size / 72 / 5);
+      } else {
+        svg.scale(size / 72 / 1.5);
+      }
       const percent = percentOfAction(entity, actions, this.keyframeIndex - offset) || 0;
       if (this.shouldRotateHelper(action)) {
         svg.rotate(`+${1080 * percent}`);
@@ -157,7 +163,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
   }
 
   private getSize(action: EntityAction, keyframe: number): number {
-    if (action && (action.type === BallActions.SET || action.type === BallActions.BUMP)) {
+    if (action && (action.type === BallActions.SET || action.type === BallActions.BUMP || action.type === PlayerActions.JUMP)) {
       const percent = percentOfActionHelper(action, keyframe);
       if (!percent) {
         return 24;
@@ -187,7 +193,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
         if (Object.values(EntityType).includes(type)) {
           const pos: AnimationEnd = {
             type : 'POSITION',
-            endPos : {posX : event.e.offsetX, posY : event.e.offsetY}
+            endPos : {posX : event.e.offsetX, posY : event.e.offsetY},
           };
           this.store.dispatch(new AddEntity({start : pos, type : type as EntityType, icon}));
         } else {

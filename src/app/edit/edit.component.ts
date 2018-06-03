@@ -63,12 +63,11 @@ export class EditDrillComponent implements OnInit {
           if (!drill) {
             return;
           }
-          // this.store.dispatch(new LoadAnimation(drill.animations[0]));
-          this.store.dispatch(new LoadAnimation({
-            entities: [],
-            actions: [],
-            possessions: [],
-          }));
+          this.store.dispatch(new LoadAnimation(drill.animations[0]));
+          // this.store.dispatch(new LoadAnimation({
+          //   entities: [],
+          //   actions: [],
+          // }));
           this.form.get('name')!.setValue(drill.name);
           this.form.get('description')!.setValue(drill.description);
           this.form.get('minLevel')!.setValue(drill.minLevel);
@@ -95,7 +94,7 @@ export class EditDrillComponent implements OnInit {
       currentAnimations = animations;
     });
     if (!currentAnimations) {
-      currentAnimations = [{entities: [], actions: [], possessions: []}];
+      currentAnimations = [{entities: [], actions: []}];
     }
     const drill: Drill = {
       name: this.form.get('name')!.value,

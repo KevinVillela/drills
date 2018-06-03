@@ -47,6 +47,10 @@ export type AnimationEnd = AnimationEndPosition|AnimationEndEntity;
 export interface EntityAction {
   // TODO change to ID
   actionId: number;
+  /**
+   * The entity ID of the entity that the action is being performed on.
+   * TODO change to targetId.
+   */
   sourceId: number;
   type: BallActions|PlayerActions;
   /** The starting keyframe of the action, exclusive. */
@@ -60,12 +64,12 @@ export interface EntityAction {
    */
   // playerStartFrame?: number;
   end: AnimationEnd;
-  entityIds: number[];
 }
 
 export interface Possession {
   ballId: number;
   playerId: number;
+  determinantId: number;
   startFrame: number;
   /** An end frame, if the possession is relenquished. If it is not, then this is undefined. */
   endFrame?: number;
@@ -134,5 +138,4 @@ export interface Entity {
 export interface Animation {
   entities: Entity[];
   actions: EntityAction[];
-  possessions: Possession[];
 }
