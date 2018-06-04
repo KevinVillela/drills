@@ -3,7 +3,12 @@
 
 module.exports = function (config) {
   config.set({
+    autoWatch: false, // Temporary because of CPU issues
     basePath: '',
+    // files: [
+    //   {pattern: 'app/**'},
+    //   // {pattern: 'node_modules/**', included: false, watched: false},
+    // ],
     frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
       require('karma-jasmine'),
@@ -23,10 +28,9 @@ module.exports = function (config) {
       environment: 'dev'
     },
     reporters: ['progress', 'kjhtml'],
-    port: 9876,
+    port: 9877,
     colors: true,
     logLevel: config.LOG_INFO,
-    autoWatch: true,
     browsers: ['Chrome'],
     singleRun: false
   });

@@ -3,7 +3,7 @@ import {AngularFirestore, AngularFirestoreCollection} from 'angularfire2/firesto
 import {Observable} from 'rxjs/Observable';
 import {map} from 'rxjs/operators';
 
-import {DrillsState} from '../../../app/model/types';
+import {DrillsState} from '../model/types';
 import { Router } from '@angular/router';
 
 @Component({

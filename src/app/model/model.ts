@@ -63,7 +63,7 @@ export const ADD_ENTITY = 'ADD_ENTITY';
 
 export class AddEntity implements Action {
   readonly type = ADD_ENTITY;
-  constructor(readonly entity: {type: EntityType; icon: string; start: AnimationEnd},
+  constructor(readonly entity: {type: EntityType; icon: string}, readonly start: AnimationEnd,
               readonly targetId?: number) {}
 }
 
@@ -264,22 +264,26 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     return {...state, animations : [ action.animation ]};
   case ADD_ENTITY: {
     const nextEntityId = getNextEntityId(animation);
+    const newAction: EntityAction = {
+      actionId : getNextActionId(animation),
+      sourceId : nextEntityId,
+      type : PlayerActions.MOVE,
+      startFrame : 0,
+      endFrame : 1,
+      end : action.start,
+    };
     if (action.targetId != null) {
       const target = entityWithId(animation.entities, action.targetId);
       if (!target) {
         console.error('Tried to give add entity on top of unknown entity ID', action.targetId);
         return state;
       }
-      const possession = {
-        startFrame : state.keyframeIndex,
-        playerId : target.type === EntityType.PLAYER ? target.id : nextEntityId,
-        ballId : target.type === EntityType.PLAYER ? nextEntityId : target.id,
-      };
       return {
         ...state,
         selectedEntityId : animation.entities.length,
         animations : [ {
           ...animation,
+          actions : animation.actions.concat(newAction),
           entities : animation.entities.concat([ {...action.entity, id : nextEntityId} ]),
         } ],
       };
@@ -289,6 +293,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       selectedEntityId : animation.entities.length,
       animations : [ {
         ...animation,
+        actions : animation.actions.concat(newAction),
         entities : animation.entities.concat([ {...action.entity, id : nextEntityId} ]),
       } ],
     };
@@ -302,86 +307,58 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       return state;
     }
     const keyframeAction = lastActionForKeyframe(keyframeEntity, animation.actions, keyframe);
-    if (keyframe === 0 || !keyframeAction) {
-      // This means we are just setting the start position.
-      let owningEntity: Entity = keyframeEntity;
-      if (keyframeEntity.start.type === 'ENTITY') {
-        owningEntity = entityWithIdOrDie(animation.entities, keyframeEntity.start.entityId);
-      }
-      owningEntity.start = {
-        type : 'POSITION',
-        endPos : {
-          posX : action.position.posX,
-          posY : action.position.posY,
-        }
-      };
-      return {
-        ...state,
-        animations : [ {
-          ...animation,
-          entities : animation.entities.map(entity => {
-            if (entity === owningEntity) {
-              return {...owningEntity};
-            }
-            return entity;
-          })
-        } ],
-      };
-    } else {
-      // Interpolate from the position of the entity at that keyframe to the end.
-      // Note that the percentage might actually be 1 - that's fine, the logic is the same.
-      const percent = 1 - (percentOfActionHelper(keyframeAction, keyframe) || 0);
-      if (!percent) {
+    // Interpolate from the position of the entity at that keyframe to the end.
+    // Note that the percentage might actually be 1 - that's fine, the logic is the same.
+    let percent = 1 - (percentOfActionHelper(keyframeAction, keyframe) || 0);
+    if (!percent) {
+      if (keyframeAction.startFrame === 0) {
+        percent = 1;
+      } else {
         console.warn('wtf?');
         return state;
       }
-      const startPosition = startPositionForAction(keyframeEntity, keyframe, state);
-      const animationLength = keyframeAction.endFrame - keyframeAction.startFrame;
-      const newY = (action.position.posY - startPosition.posY) / percent + startPosition.posY;
-      const newX = (action.position.posX - startPosition.posX) / percent + startPosition.posX;
-      const newPos = {posX : newX, posY : newY};
-      let owningEntity: Entity = keyframeEntity;
-      let owningAction: EntityAction|undefined = keyframeAction;
-      if (keyframeAction.end.type === 'POSITION') {
-        keyframeAction.end.endPos = newPos;
-      } else {
-        if (keyframeAction.end.type === 'ENTITY') {
-          owningEntity = entityWithIdOrDie(animation.entities, keyframeAction.end.entityId);
-          owningAction = actionForKeyframe(owningEntity, animation.actions, keyframe);
-          if (owningAction) {
-            if (owningAction.end.type === 'POSITION') {
-              owningAction.end.endPos = newPos;
-            } else {
-              throw new Error('wtf!!');
-            }
-          } else {
-            if (owningEntity.start.type === 'POSITION') {
-              owningEntity.start.endPos = newPos;
-            } else {
-              throw new Error('wtf??');
-            }
-          }
+    }
+    const startPosition = startPositionForAction(keyframeEntity, keyframe, [], state);
+    const animationLength = keyframeAction.endFrame - keyframeAction.startFrame;
+    const newY = (action.position.posY - startPosition.posY) / percent + startPosition.posY;
+    const newX = (action.position.posX - startPosition.posX) / percent + startPosition.posX;
+    const newPos = {posX : newX, posY : newY};
+    let owningEntity: Entity = keyframeEntity;
+    let owningAction: EntityAction|undefined = keyframeAction;
+    if (keyframeAction.end.type === 'POSITION') {
+      keyframeAction.end.endPos = newPos;
+    } else {
+      if (keyframeAction.end.type === 'ENTITY') {
+        owningEntity = entityWithIdOrDie(animation.entities, keyframeAction.end.entityId);
+        owningAction = actionForKeyframe(owningEntity, animation.actions, keyframe);
+        if (!owningAction) {
+          throw new Error(`Action for entity ${owningEntity.icon} was undefined somehow`);
+        }
+        if (owningAction.end.type === 'POSITION') {
+          owningAction.end.endPos = newPos;
+        } else {
+          throw new Error('wtf!!');
         }
       }
-      return {
-        ...state,
-        animations : [ {
-          ...animation,
-          entities : animation.entities.map(entity => {
-            if (entity === owningEntity) {
-              return {...owningEntity};
-            }
-            return entity;
-          }),
-          actions : animation.actions.map(tempAction => {
-            if (tempAction === owningAction) {
-              return owningAction;
-            }
-            return tempAction;
-          })
-        } ],
-      };
     }
+    return {
+      ...state,
+      animations : [ {
+        ...animation,
+        entities : animation.entities.map(entity => {
+          if (entity === owningEntity) {
+            return {...owningEntity};
+          }
+          return entity;
+        }),
+        actions : animation.actions.map(tempAction => {
+          if (tempAction === owningAction) {
+            return owningAction;
+          }
+          return tempAction;
+        })
+      } ],
+    };
   }
   case ADD_ACTION: {
     if (state.selectedEntityId == null) {
@@ -397,7 +374,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       type : selectedEntity.type === EntityType.PLAYER ? PlayerActions.MOVE : BallActions.SPIKE,
       sourceId : state.selectedEntityId,
       end : action.end,
-      startFrame : state.keyframeIndex,
+      startFrame : state.keyframeIndex === 0 ? 1 : state.keyframeIndex,
       endFrame : state.keyframeIndex + framesToAdd,
       actionId : getNextActionId(animation),
     };
@@ -469,7 +446,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     }
     const currentAction = actionForKeyframe(actionEntity, animation.actions,
                                             state.keyframeIndex - (action.keyframe || 0));
-    if (!currentAction) {
+    if (!currentAction || currentAction.startFrame === 0) {
       return {...state, selectedEntityId : action.id};
     }
     return {
@@ -527,7 +504,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
             }
             // else if (tempAction.end < currentAction.end) {
             //     tempAction.start -= startDistance;
-            //     tempAction.end -= startDistance;
+            //     tempAction.end -= Distance;
             // }
           }
           // tempAction.start = Math.max(0, tempAction.start);

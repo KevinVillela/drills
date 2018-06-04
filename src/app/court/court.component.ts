@@ -195,7 +195,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
             type : 'POSITION',
             endPos : {posX : event.e.offsetX, posY : event.e.offsetY},
           };
-          this.store.dispatch(new AddEntity({start : pos, type : type as EntityType, icon}));
+          this.store.dispatch(new AddEntity({type : type as EntityType, icon}, pos));
         } else {
           console.error('Drag event with invalid type: ' + type);
         }

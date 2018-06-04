@@ -93,7 +93,7 @@ export class IconService {
               entityId : entity.id,
             };
             this.store.dispatch(new AddEntity(
-                {start : pos, type : type as EntityType, icon : iconData}, entity.id));
+                {type : type as EntityType, icon : iconData}, pos, entity.id));
           } else {
             console.error('Drag event with invalid type: ' + type);
           }

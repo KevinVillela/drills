@@ -128,11 +128,15 @@ export interface Position {
   posY: number;
 }
 
+/**
+ * Represents an entity on the court. Note that this does not contain eny
+ * information about where the entity is on the court, including a Start Position - that is reserved
+ * for actions.
+ */
 export interface Entity {
   id: number;
   type: EntityType;
   icon: string;
-  start: AnimationEnd;
 }
 
 export interface Animation {
