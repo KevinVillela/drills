@@ -24,6 +24,15 @@ export interface AnimationEndEntity {
 
 export type AnimationEnd = AnimationEndPosition|AnimationEndEntity;
 
+// In the future, we might add the ability to follow an entity.
+export interface RotationEndPosition {
+  type: 'POSITION';
+  /** The degrees of rotation, from 0 to 360. */
+  degrees: number;
+}
+
+export type RotationEnd = RotationEndPosition;
+
 // Each frame is a function of the Entities and Actions that are defined in the state.
 //
 // The first frame is decided by the explicit starting position of each entity.
@@ -45,13 +54,11 @@ export type AnimationEnd = AnimationEndPosition|AnimationEndEntity;
 // Every action has a source (which must be of type player), a type (spike, set, jump, shuffle,
 // etc...), and a target (a position or entity).
 export interface EntityAction {
-  // TODO change to ID
-  actionId: number;
+  id: number;
   /**
    * The entity ID of the entity that the action is being performed on.
-   * TODO change to targetId.
    */
-  sourceId: number;
+  targetId: number;
   type: BallActions|PlayerActions;
   /** The starting keyframe of the action, exclusive. */
   startFrame: number;
@@ -64,6 +71,10 @@ export interface EntityAction {
    */
   // playerStartFrame?: number;
   end: AnimationEnd;
+  /**
+   * The ending rotation of the entity.
+   */
+  rotation: RotationEnd;
 }
 
 export interface Possession {
@@ -126,6 +137,10 @@ export enum EntityType {
 export interface Position {
   posX: number;
   posY: number;
+}
+
+export interface AbsolutePosition extends Position {
+  rotation: number;
 }
 
 /**

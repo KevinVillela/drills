@@ -3,6 +3,7 @@ import {Store} from '@ngrx/store';
 
 import {PossessSelected} from './model';
 import {
+  AbsolutePosition,
   Animation,
   AnimationEnd,
   BallActions,
@@ -13,7 +14,8 @@ import {
   EntityType,
   PlayerActions,
   Position,
-  Possession
+  Possession,
+  RotationEnd
 } from './types';
 
 @Injectable()
@@ -37,7 +39,7 @@ export function getPossessions(drillsState: DrillsState): Possession[] {
   for (const action of animation.actions) {
     // Add a new possession for this action, if necessary.
     if (action.end.type === 'ENTITY') {
-      const entity = entityWithIdOrDie(animation.entities, action.sourceId);
+      const entity = entityWithIdOrDie(animation.entities, action.targetId);
       if (action.startFrame === 0) {
         possessions.push({
           playerId : entity.type === EntityType.PLAYER ? entity.id : action.end.entityId,
@@ -59,7 +61,7 @@ export function getPossessions(drillsState: DrillsState): Possession[] {
     for (const possession of possessions) {
       // Set the end frame of the previous possession, if it exists.
       if (hasPossessionAtKeyframe(action.startFrame, possession) &&
-          (possession.playerId === action.sourceId || possession.ballId === action.sourceId)) {
+          (possession.playerId === action.targetId || possession.ballId === action.targetId)) {
         if (Object.values(BallActions).includes(action.type)) {
           possession.endFrame = action.startFrame;
         }
@@ -76,7 +78,7 @@ export function getPossessions(drillsState: DrillsState): Possession[] {
  * 3. Interpolate between them.
  */
 export function positionForKeyframeHelper(entity: Entity, keyframe: number,
-                                          drillsState: DrillsState) {
+                                          drillsState: DrillsState): AbsolutePosition {
   const possessions = getPossessions(drillsState);
   const animation = drillsState.animations[0];
   // If we are CURRENTLY in possession, then just get the position of the possessing entity, which
@@ -98,7 +100,7 @@ export function positionForKeyframeHelper(entity: Entity, keyframe: number,
   // 1. Get start position.
   const lastPosition = startPositionForAction(entity, keyframe, possessions, drillsState);
   // 2. Get end Position.
-  let actionEndPosition: Position|null = null;
+  let actionEndPosition: AbsolutePosition|null = null;
   const currentAction = actionForKeyframe(entity, animation.actions, keyframe);
   if (!currentAction) {
     // We are not currently in an action, check if we are possessed and return that position if so.
@@ -119,15 +121,17 @@ export function positionForKeyframeHelper(entity: Entity, keyframe: number,
 
   return {
     posX : lastPosition.posX + (actionEndPosition.posX - lastPosition.posX) / length * index,
-    posY : lastPosition.posY + (actionEndPosition.posY - lastPosition.posY) / length * index
+    posY : lastPosition.posY + (actionEndPosition.posY - lastPosition.posY) / length * index,
+    rotation : lastPosition.rotation +
+                   (actionEndPosition.rotation - lastPosition.rotation) / length * index,
   };
 }
 
-export function startPositionForAction(entity: Entity, keyframe: number,
-                                       possessions: Possession[], drillsState: DrillsState): Position {
+export function startPositionForAction(entity: Entity, keyframe: number, possessions: Possession[],
+                                       drillsState: DrillsState): AbsolutePosition {
   const animation = drillsState.animations[0];
   // Sort the actions from start to finish
-  const sorted = animation.actions.filter(action => action.sourceId === entity.id)
+  const sorted = animation.actions.filter(action => action.targetId === entity.id)
                      .sort((a, b) => b.endFrame - a.endFrame);
   // Find the most recent action.
   let lastKeyframe: number|null = null;
@@ -150,11 +154,10 @@ export function startPositionForAction(entity: Entity, keyframe: number,
           if (!hasPossessionAtKeyframe(test, possession)) {
             continue;
           }
-          if (possession.ballId !== entity.id &&
-            possession.playerId !== entity.id) {
-              continue;
-            }
-            if (possession.determinantId === entity.id) {
+          if (possession.ballId !== entity.id && possession.playerId !== entity.id) {
+            continue;
+          }
+          if (possession.determinantId === entity.id) {
             continue;
           }
           if (possession.endFrame === undefined) {
@@ -165,13 +168,19 @@ export function startPositionForAction(entity: Entity, keyframe: number,
           break;
         }
       }
-      return resolvePosition(action.end, entity,
-                             test, possessions, drillsState);
+      return {
+        ...resolvePosition(action.end, entity, test, possessions, drillsState),
+        rotation: action.rotation.degrees,
+      };
     }
     lastKeyframe = action.startFrame;
   }
-  return resolvePosition(sorted[sorted.length - 1].end, entity, keyframe, possessions, drillsState);
-  // return resolvePosition(entity.start, entity, keyframe, drillsState);
+  // TODO move this into the for loop
+  const tmp = sorted[sorted.length - 1];
+  return {
+    ...resolvePosition(tmp.end, entity, keyframe, possessions, drillsState),
+    rotation: tmp.rotation.degrees,
+  };
 }
 
 function resolvePosition(pos: AnimationEnd, entity: Entity, keyframe: number,
@@ -189,38 +198,35 @@ function resolvePosition(pos: AnimationEnd, entity: Entity, keyframe: number,
 }
 
 export function endPositionForAction(action: EntityAction, keyframe: number,
-                                     drillsState: DrillsState): Position {
+                                     drillsState: DrillsState): AbsolutePosition {
   const animation = drillsState.animations[0];
   if (action.end.type === 'POSITION') {
-    return action.end.endPos;
+    return {...action.end.endPos, rotation: action.rotation.degrees};
   } else {
     const entity = entityWithId(animation.entities, action.end.entityId);
     if (!entity) {
       throw new Error('Unknown entity with ID ' + action.end.entityId);
     }
-    return positionForKeyframeHelper(entity, action.endFrame, drillsState);
+    return {...positionForKeyframeHelper(entity, action.endFrame, drillsState),
+      rotation: action.rotation.degrees};
   }
 }
 
 export function lastActionForKeyframe(entity: Entity, actions: EntityAction[],
                                       keyframeIndex: number): EntityAction {
   const test =
-      actions.filter(action => action.sourceId === entity.id && action.startFrame <= keyframeIndex)
+      actions.filter(action => action.targetId === entity.id && action.startFrame <= keyframeIndex)
           .sort((action1, action2) => action1.startFrame - action2.startFrame);
   return test[test.length - 1];
-  // /* const test2 = actions.filter(action => action.sourceId === entity.id);
-  //  */return test2[test2.length - 1];
 }
 
 export function actionForKeyframe(entity: Entity, actions: EntityAction[],
                                   keyframeIndex: number): EntityAction|undefined {
   const test = actions.find(action => {
     return action.startFrame <= keyframeIndex && action.endFrame >= keyframeIndex &&
-           action.sourceId === entity.id;
+           action.targetId === entity.id;
   });
   return test;
-  // /* const test2 = actions.filter(action => action.sourceId === entity.id);
-  //  */return test2[test2.length - 1];
 }
 
 export function hasPossessionAtKeyframe(keyframe: number, possession: Possession) {

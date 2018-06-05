@@ -16,7 +16,8 @@ import {
   getSelectedEntityId,
   PossessSelected,
   SelectEntity,
-  SetPosition
+  SetPosition,
+  SetRotation
 } from '../model/model';
 import {AnimationEnd, DrillsState, Entity, EntityAction, EntityType} from '../model/types';
 
@@ -109,6 +110,10 @@ export class IconService {
           } else {
             this.store.dispatch(new SetPosition(entity.id, offset, {posX, posY}));
           }
+        });
+        res.on('rotating', (event) => {
+          console.log(event);
+          this.store.dispatch(new SetRotation(entity.id, Math.floor(res.angle)));
         });
         res.on('mousedown', (event) => {
           if (event.button === 3) { // Right-click.

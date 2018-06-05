@@ -80,7 +80,7 @@ export class ActionComponent implements OnInit {
     let id: undefined|number;
     this.currentAction.pipe(take(1)).subscribe((val) => {
       if (val) {
-        id = val.actionId;
+        id = val.id;
       }
     });
     return id;

@@ -89,6 +89,13 @@ export class SetPosition implements Action {
               readonly position: {posX: number, posY: number}) {}
 }
 
+export const SET_ROTATION = 'SET_ROTATION';
+
+export class SetRotation implements Action {
+  readonly type = SET_ROTATION;
+  constructor(readonly entityId: number, readonly rotation: number) {}
+}
+
 export const UPDATE_KEYFRAME_INDEX = 'UPDATE_KEYFRAME_INDEX';
 
 export class UpdateKeyframeIndex implements Action {
@@ -168,7 +175,7 @@ export class LoadAnimation implements Action {
 }
 
 export type ActionTypes =
-    LoadAnimation|ChangeAction|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|
+    SetRotation|LoadAnimation|ChangeAction|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|
     NextFrame|DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
 
 export const getDrillsState =
@@ -251,7 +258,7 @@ function getNextEntityId(animation: Animation) {
 function getNextActionId(animation: Animation) {
   // "Ensure" that the Entity and Action IDs don't collide.
   let nextActionId = 1000;
-  while (animation.actions.some((action) => action.actionId === nextActionId)) {
+  while (animation.actions.some((action) => action.id === nextActionId)) {
     nextActionId++;
   }
   return nextActionId;
@@ -265,12 +272,16 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
   case ADD_ENTITY: {
     const nextEntityId = getNextEntityId(animation);
     const newAction: EntityAction = {
-      actionId : getNextActionId(animation),
-      sourceId : nextEntityId,
+      id : getNextActionId(animation),
+      targetId : nextEntityId,
       type : PlayerActions.MOVE,
       startFrame : 0,
       endFrame : 1,
       end : action.start,
+      rotation: {
+        type: 'POSITION',
+        degrees: 0,
+      }
     };
     if (action.targetId != null) {
       const target = entityWithId(animation.entities, action.targetId);
@@ -318,6 +329,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
         return state;
       }
     }
+    // TODO figure out the possessions here.
     const startPosition = startPositionForAction(keyframeEntity, keyframe, [], state);
     const animationLength = keyframeAction.endFrame - keyframeAction.startFrame;
     const newY = (action.position.posY - startPosition.posY) / percent + startPosition.posY;
@@ -360,6 +372,26 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       } ],
     };
   }
+  case SET_ROTATION: {
+    const entity = entityWithId(animation.entities, action.entityId);
+    if (!entity) {
+      console.error('Tried to set position for null keyframe entity');
+      return state;
+    }
+    const entityAction = lastActionForKeyframe(entity, animation.actions, state.keyframeIndex);
+    return {
+      ...state,
+      animations: [{
+        ...animation,
+        actions : animation.actions.map(tempAction => {
+          if (tempAction === entityAction) {
+            return {...entityAction, rotation: {type: 'POSITION' as 'POSITION', degrees: action.rotation}};
+          }
+          return tempAction;
+        })
+      }]
+    };
+  }
   case ADD_ACTION: {
     if (state.selectedEntityId == null) {
       throw new Error('Tried to add action, but no entities were selected');
@@ -372,11 +404,15 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     const framesToAdd = state.interpolate === 0 ? 10 : state.interpolate;
     const newAction: EntityAction = {
       type : selectedEntity.type === EntityType.PLAYER ? PlayerActions.MOVE : BallActions.SPIKE,
-      sourceId : state.selectedEntityId,
+      targetId : state.selectedEntityId,
       end : action.end,
       startFrame : state.keyframeIndex === 0 ? 1 : state.keyframeIndex,
       endFrame : state.keyframeIndex + framesToAdd,
-      actionId : getNextActionId(animation),
+      id : getNextActionId(animation),
+      rotation: {
+        type: 'POSITION',
+        degrees: 0,
+      }
     };
     const ret = {
       ...state,
@@ -399,7 +435,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
   }
   case DELETE_ACTION: {
     const currentAction =
-        animation.actions.find((tempAction) => tempAction.actionId === action.actionId);
+        animation.actions.find((tempAction) => tempAction.id === action.actionId);
     if (!currentAction) {
       console.error('Tried to delete invalid action of id', action.actionId);
       return state;
@@ -408,7 +444,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       ...state,
       animations : [ {
         ...animation,
-        actions : animation.actions.filter((tempAction) => tempAction.actionId !== action.actionId),
+        actions : animation.actions.filter((tempAction) => tempAction.id !== action.actionId),
       } ],
       keyframeIndex : Math.min(maxAnimationLengthHelper(animation.actions), state.keyframeIndex),
     };
@@ -433,7 +469,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       animations : [ {
         ...animation,
         entities : animation.entities.filter(entity => entity.id !== action.entityId),
-        actions : animation.actions.filter(tempAction => tempAction.sourceId !== action.entityId),
+        actions : animation.actions.filter(tempAction => tempAction.targetId !== action.entityId),
       } ]
     };
   case SELECT_ENTITY: {
@@ -458,7 +494,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
   }
   case CHANGE_ACTION: {
     const currentAction: EntityAction|undefined =
-        animation.actions.find(tempAction => tempAction.actionId === action.actionId);
+        animation.actions.find(tempAction => tempAction.id === action.actionId);
     if (currentAction == null) {
       throw new Error('Tried to change action when none was selected');
     }
@@ -467,7 +503,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       animations : [ {
         ...animation,
         actions : animation.actions.map(tempAction => {
-          if (tempAction.actionId === currentAction.actionId) {
+          if (tempAction.id === currentAction.id) {
             return {...tempAction, type : action.actionType};
           }
           return tempAction;
@@ -481,7 +517,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       return state;
     }
     const currentAction: EntityAction|undefined =
-        animation.actions.find(tempAction => tempAction.actionId === action.actionId);
+        animation.actions.find(tempAction => tempAction.id === action.actionId);
     console.log(currentAction);
     if (currentAction == null) {
       throw new Error('Tried to change action when none was selected');
@@ -492,7 +528,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       animations : [ {
         ...animation,
         actions : animation.actions.map(tempAction => {
-          if (tempAction.actionId === action.actionId) {
+          if (tempAction.id === action.actionId) {
             // tempAction.start = action.start;
             tempAction.endFrame = action.end;
           } else {

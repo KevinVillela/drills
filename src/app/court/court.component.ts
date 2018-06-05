@@ -32,7 +32,6 @@ import {
   percentOfAction,
   percentOfActionHelper,
   SelectEntity,
-  SetPosition
 } from '../model/model';
 import {
   AnimationEnd,
@@ -42,7 +41,8 @@ import {
   EntityAction,
   EntityType,
   Position,
-  PlayerActions
+  PlayerActions,
+  AbsolutePosition
 } from '../model/types';
 
 import {IconService} from './icons';
@@ -86,7 +86,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
     this.store.select(currentEntity).subscribe(entity => { this.currentEntity = entity; });
   }
 
-  private async drawEntity(entity: Entity, actions: EntityAction[], pos: Position|null,
+  private async drawEntity(entity: Entity, actions: EntityAction[], pos: AbsolutePosition|null,
                            offset = 0) {
     if (!pos) {
       return;
@@ -113,7 +113,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
         // this.rotate(entity, offset, svg);
 
       } else {
-        svg.rotate('0');
+        svg.rotate(pos.rotation);
       }
       const opacity = 1 - offset / (this.past + this.interpolate);
       svg.set({opacity});
@@ -315,7 +315,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
         {strokeDashArray : [ 5, 3 ], stroke : 'black'}));
   }
 
-  getPos(entities: Entity[], entity: Entity, actions: EntityAction[], minus = 0): Position|null {
+  getPos(entities: Entity[], entity: Entity, actions: EntityAction[], minus = 0): AbsolutePosition|null {
     if (this.keyframeIndex >= minus) {
       const pos = this.animationService.positionForKeyframe(entity, this.keyframeIndex - minus);
       if (!pos) {
