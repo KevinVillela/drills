@@ -10,6 +10,7 @@ import {
   actionForKeyframe,
   entityWithId,
   entityWithIdOrDie,
+  getLastAction,
   getPossessions,
   hasPossessionAtKeyframe,
   lastActionForKeyframe,
@@ -17,7 +18,7 @@ import {
   startPositionForAction
 } from './animation';
 import {sampleState} from './json';
-import {AnimationEndPosition, Position} from './types';
+import {AnimationEndPosition, Position, Environment} from './types';
 import {
   Animation,
   AnimationEnd,
@@ -38,6 +39,7 @@ export const initialState: DrillsState = {
   } ],
   name : 'Sample Drill',
   description : '',
+  environment: [Environment.BEACH],
   minLevel : 1,
   maxLevel : 1,
   focus : [],
@@ -96,6 +98,13 @@ export class SetRotation implements Action {
   constructor(readonly entityId: number, readonly rotation: number) {}
 }
 
+export const ROTATE = 'ROTATE';
+
+export class Rotate implements Action {
+  readonly type = ROTATE;
+  constructor(readonly actionId: number, readonly rotation: number) {}
+}
+
 export const UPDATE_KEYFRAME_INDEX = 'UPDATE_KEYFRAME_INDEX';
 
 export class UpdateKeyframeIndex implements Action {
@@ -152,6 +161,13 @@ export class ChangeAction implements Action {
   constructor(readonly actionId: number, readonly actionType: EntityActionType) {}
 }
 
+export const CHANGE_ACTION_JUMP = 'CHANGE_ACTION_JUMP';
+
+export class ChangeActionJump implements Action {
+  readonly type = CHANGE_ACTION_JUMP;
+  constructor(readonly actionId: number, readonly jumping: boolean) {}
+}
+
 export const CHANGE_ACTION_END = 'CHANGE_ACTION_END';
 
 export class ChangeActionEnd implements Action {
@@ -174,9 +190,9 @@ export class LoadAnimation implements Action {
   constructor(readonly animation: Animation) {}
 }
 
-export type ActionTypes =
-    SetRotation|LoadAnimation|ChangeAction|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|
-    NextFrame|DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
+export type ActionTypes = Rotate|SetRotation|LoadAnimation|ChangeAction|ChangeActionJump|
+    ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|NextFrame|DeleteEntity|
+    SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
 
 export const getDrillsState =
     createSelector((state: {drillsState: DrillsState}) => state.drillsState,
@@ -278,10 +294,11 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       startFrame : 0,
       endFrame : 1,
       end : action.start,
-      rotation: {
-        type: 'POSITION',
-        degrees: 0,
-      }
+      rotation : {
+        type : 'POSITION',
+        degrees : 0,
+      },
+      jumping : false,
     };
     if (action.targetId != null) {
       const target = entityWithId(animation.entities, action.targetId);
@@ -381,17 +398,43 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     const entityAction = lastActionForKeyframe(entity, animation.actions, state.keyframeIndex);
     return {
       ...state,
-      animations: [{
+      animations : [ {
         ...animation,
         actions : animation.actions.map(tempAction => {
           if (tempAction === entityAction) {
-            return {...entityAction, rotation: {type: 'POSITION' as 'POSITION', degrees: action.rotation}};
+            return {
+              ...entityAction,
+              rotation : {type : 'POSITION' as 'POSITION', degrees : action.rotation}
+            };
           }
           return tempAction;
         })
-      }]
+      } ]
     };
   }
+  case ROTATE:
+    return {
+      ...state,
+      animations : [ {
+        ...animation,
+        actions : animation.actions.map(tempAction => {
+          if (tempAction.id === action.actionId) {
+            let degrees = (tempAction.rotation.degrees + action.rotation) % 360;
+            if (degrees < 0) {
+              degrees = 360 + degrees;
+            }
+            return {
+              ...tempAction,
+              rotation : {
+                type : 'POSITION' as 'POSITION',
+                degrees,
+              }
+            };
+          }
+          return tempAction;
+        })
+      } ]
+    };
   case ADD_ACTION: {
     if (state.selectedEntityId == null) {
       throw new Error('Tried to add action, but no entities were selected');
@@ -401,7 +444,8 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       throw new Error('Tried to add action, but entity of ID ' + state.selectedEntityId +
                       ' does not exist');
     }
-    const framesToAdd = state.interpolate === 0 ? 10 : state.interpolate;
+    const framesToAdd = state.interpolate === 0 ? 10 : state.interpolate - 1;
+    const lastAction = getLastAction(selectedEntity, state.keyframeIndex + 2, state);
     const newAction: EntityAction = {
       type : selectedEntity.type === EntityType.PLAYER ? PlayerActions.MOVE : BallActions.SPIKE,
       targetId : state.selectedEntityId,
@@ -409,10 +453,11 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       startFrame : state.keyframeIndex === 0 ? 1 : state.keyframeIndex,
       endFrame : state.keyframeIndex + framesToAdd,
       id : getNextActionId(animation),
-      rotation: {
-        type: 'POSITION',
-        degrees: 0,
-      }
+      rotation : {
+        type : 'POSITION',
+        degrees : lastAction ? lastAction.rotation.degrees : 0,
+      },
+      jumping : false,
     };
     const ret = {
       ...state,
@@ -434,8 +479,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     return ret;
   }
   case DELETE_ACTION: {
-    const currentAction =
-        animation.actions.find((tempAction) => tempAction.id === action.actionId);
+    const currentAction = animation.actions.find((tempAction) => tempAction.id === action.actionId);
     if (!currentAction) {
       console.error('Tried to delete invalid action of id', action.actionId);
       return state;
@@ -493,17 +537,12 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     };
   }
   case CHANGE_ACTION: {
-    const currentAction: EntityAction|undefined =
-        animation.actions.find(tempAction => tempAction.id === action.actionId);
-    if (currentAction == null) {
-      throw new Error('Tried to change action when none was selected');
-    }
     return {
       ...state,
       animations : [ {
         ...animation,
         actions : animation.actions.map(tempAction => {
-          if (tempAction.id === currentAction.id) {
+          if (tempAction.id === action.actionId) {
             return {...tempAction, type : action.actionType};
           }
           return tempAction;
@@ -511,6 +550,19 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
       } ]
     };
   }
+  case CHANGE_ACTION_JUMP:
+    return {
+      ...state,
+      animations : [ {
+        ...animation,
+        actions : animation.actions.map(tempAction => {
+          if (tempAction.id === action.actionId) {
+            return {...tempAction, jumping : action.jumping};
+          }
+          return tempAction;
+        })
+      } ]
+    };
   case CHANGE_ACTION_END: {
     if (state.selectedEntityId === undefined) {
       console.error('Tried to change action when no entity was selected');
@@ -522,33 +574,18 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     if (currentAction == null) {
       throw new Error('Tried to change action when none was selected');
     }
-    const endDistance = currentAction.endFrame - action.end;
     return {
       ...state,
       animations : [ {
         ...animation,
         actions : animation.actions.map(tempAction => {
           if (tempAction.id === action.actionId) {
-            // tempAction.start = action.start;
-            tempAction.endFrame = action.end;
-          } else {
-            if (tempAction.startFrame >= currentAction.startFrame) {
-              tempAction.startFrame -= endDistance;
-              tempAction.endFrame -= endDistance;
-            } else {
-              console.log('not current action: ', tempAction.startFrame, currentAction.startFrame);
-            }
-            // else if (tempAction.end < currentAction.end) {
-            //     tempAction.start -= startDistance;
-            //     tempAction.end -= Distance;
-            // }
+            return {...tempAction, endFrame : action.end};
           }
-          // tempAction.start = Math.max(0, tempAction.start);
-          tempAction.endFrame = Math.max(0, tempAction.endFrame);
-          return {...tempAction};
+          return tempAction;
         }),
       } ],
-      keyframeIndex : currentAction.endFrame,
+      keyframeIndex : action.end,
       past : currentAction.endFrame - currentAction.startFrame
     };
   }

@@ -34,15 +34,15 @@ import {
   SelectEntity,
 } from '../model/model';
 import {
+  AbsolutePosition,
   AnimationEnd,
   BallActions,
   DrillsState,
   Entity,
   EntityAction,
   EntityType,
-  Position,
   PlayerActions,
-  AbsolutePosition
+  Position
 } from '../model/types';
 
 import {IconService} from './icons';
@@ -54,7 +54,8 @@ export const COURT_BORDER = 50;
   selector : 'drills-court',
   templateUrl : './court.component.html',
   styleUrls : [ './court.component.css' ],
-  changeDetection : ChangeDetectionStrategy.OnPush
+  changeDetection : ChangeDetectionStrategy.OnPush,
+  providers: [IconService],
 })
 export class CourtComponent implements OnInit, AfterViewInit {
   currentEntity: Entity|undefined;
@@ -97,21 +98,20 @@ export class CourtComponent implements OnInit, AfterViewInit {
     }
     svg.left = pos.posX;
     svg.top = pos.posY;
+    if (entity.type === EntityType.PLAYER) {
+      svg.scale(pos.posZ / 5);
+    }
     const action = actionForKeyframe(entity, actions, this.keyframeIndex - offset);
     if (action) {
       const size = this.getSize(action, this.keyframeIndex - offset);
       // The volleyball behaves weirdly, so treat it special.
       console.log(size);
       if (entity.type === EntityType.VOLLEYBALL) {
-        svg.scale(size / 72 / 5);
-      } else {
-        svg.scale(size / 72 / 1.5);
+        svg.scale(size / 72 / 8);
       }
       const percent = percentOfAction(entity, actions, this.keyframeIndex - offset) || 0;
       if (this.shouldRotateHelper(action)) {
         svg.rotate(`+${1080 * percent}`);
-        // this.rotate(entity, offset, svg);
-
       } else {
         svg.rotate(pos.rotation);
       }
@@ -129,30 +129,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
     } else {
       svg.getObjects().forEach(object => { object.set({strokeWidth : 1, stroke : 'black'}); });
     }
-    // if (!cached) {
     this.canvas.add(svg);
-    // }
-  }
-
-  private rotate(entity: Entity, actions: EntityAction[], offset: number, svg: fabric.Path): void {
-    const id = getId(entity, offset);
-    if (this.isAnimating.get(id)) {
-      return;
-    }
-    this.isAnimating.set(id, true);
-    svg.animate({angle : '-=360'}, {
-      duration : Infinity,
-      onChange : () => this.canvas.renderAll(),
-      onComplete : () => { this.isAnimating.set(id, false); },
-      easing : t => t,
-      // easing: function (t, b, c, d) { return c * t / d + b },
-      abort : () => !this.shouldRotate(entity, actions, offset)
-    });
-  }
-
-  private shouldRotate(entity: Entity, actions: EntityAction[], offset: number): boolean {
-    const action = actionForKeyframe(entity, actions, this.keyframeIndex - offset);
-    return this.shouldRotateHelper(action);
   }
 
   private shouldRotateHelper(action: EntityAction|undefined) {
@@ -163,7 +140,8 @@ export class CourtComponent implements OnInit, AfterViewInit {
   }
 
   private getSize(action: EntityAction, keyframe: number): number {
-    if (action && (action.type === BallActions.SET || action.type === BallActions.BUMP || action.type === PlayerActions.JUMP)) {
+    if (action && (action.type === BallActions.SET || action.type === BallActions.BUMP ||
+                   action.type === PlayerActions.JUMP)) {
       const percent = percentOfActionHelper(action, keyframe);
       if (!percent) {
         return 24;
@@ -289,15 +267,6 @@ export class CourtComponent implements OnInit, AfterViewInit {
   private resetCanvas() {
     this.canvas.clear();
     // Boundary lines
-    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER,
-    // COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
-    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_BORDER, COURT_SIZE /
-    // 2 + COURT_BORDER, COURT_BORDER], {stroke: 'black'})); this.canvas.add(new
-    // fabric.Line([COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER, COURT_SIZE / 2
-    // + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke: 'black'}));
-    // this.canvas.add(new fabric.Line([COURT_BORDER, COURT_SIZE + COURT_BORDER,
-    // COURT_SIZE / 2 + COURT_BORDER, COURT_SIZE + COURT_BORDER], {stroke:
-    // 'black'}));
     this.canvas.add(new fabric.Rect({
       width : COURT_SIZE / 2,
       height : COURT_SIZE,
@@ -305,6 +274,12 @@ export class CourtComponent implements OnInit, AfterViewInit {
       top : COURT_BORDER,
       stroke : 'black',
       fill : '',
+      lockMovementX : true,
+      lockMovementY : true,
+      lockRotation : true,
+      lockScalingX : true,
+      lockScalingY : true,
+      selectable: false,
     }));
     // Net line
     this.canvas.add(new fabric.Line(
@@ -312,10 +287,20 @@ export class CourtComponent implements OnInit, AfterViewInit {
           COURT_BORDER, COURT_SIZE / 2 + COURT_BORDER, COURT_BORDER + COURT_SIZE / 2,
           COURT_SIZE / 2 + COURT_BORDER
         ],
-        {strokeDashArray : [ 5, 3 ], stroke : 'black'}));
+        {
+          strokeDashArray : [ 5, 3 ],
+          stroke : 'black',
+          lockMovementX : true,
+          lockMovementY : true,
+          lockRotation : true,
+          lockScalingX : true,
+          lockScalingY : true,
+          selectable: false,
+        }));
   }
 
-  getPos(entities: Entity[], entity: Entity, actions: EntityAction[], minus = 0): AbsolutePosition|null {
+  getPos(entities: Entity[], entity: Entity, actions: EntityAction[], minus = 0): AbsolutePosition
+      |null {
     if (this.keyframeIndex >= minus) {
       const pos = this.animationService.positionForKeyframe(entity, this.keyframeIndex - minus);
       if (!pos) {

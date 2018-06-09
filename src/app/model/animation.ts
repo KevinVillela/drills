@@ -97,40 +97,89 @@ export function positionForKeyframeHelper(entity: Entity, keyframe: number,
     // Otherwise, we are just a player that is in possession of a ball, so continue to get the
     // position as normal.
   }
+  const currentAction = actionForKeyframe(entity, animation.actions, keyframe);
   // 1. Get start position.
   const lastPosition = startPositionForAction(entity, keyframe, possessions, drillsState);
   // 2. Get end Position.
   let actionEndPosition: AbsolutePosition|null = null;
-  const currentAction = actionForKeyframe(entity, animation.actions, keyframe);
   if (!currentAction) {
     // We are not currently in an action, check if we are possessed and return that position if so.
 
     // Otherwise, return the start position.
-    return lastPosition;
+    return {...lastPosition, posZ : getPosZ(entity, keyframe, drillsState)};
   }
   // Still getting the end position
-  actionEndPosition = endPositionForAction(currentAction, keyframe, drillsState);
+  actionEndPosition = endPositionForAction(entity, currentAction, keyframe, drillsState);
   if (!actionEndPosition) {
     throw new Error('Unable to get end position for action');
   }
 
   // Finally, compute the interpolation and return the keyframe.
-  // const length = currentaction.end - currentaction.start;
+  // const nextAction = getNextAction(entity, keyframe, drillsState);
   const length = currentAction.endFrame - currentAction.startFrame;
   const index = keyframe - currentAction.startFrame;
 
+  let rotation = 0;
+  const rotationDelta = (actionEndPosition.rotation - lastPosition.rotation);
+  if (rotationDelta > 180) {
+    rotation = lastPosition.rotation - (360 - rotationDelta) / length * index;
+  } else {
+    rotation = lastPosition.rotation + rotationDelta / length * index;
+  }
+  if (rotation < 0) {
+    rotation = 360 + rotation;
+  }
+  rotation = rotation % 360;
   return {
     posX : lastPosition.posX + (actionEndPosition.posX - lastPosition.posX) / length * index,
     posY : lastPosition.posY + (actionEndPosition.posY - lastPosition.posY) / length * index,
-    rotation : lastPosition.rotation +
-                   (actionEndPosition.rotation - lastPosition.rotation) / length * index,
+    posZ : getPosZ(entity, keyframe, drillsState),
+    rotation,
   };
+}
+
+const SCALE = 1.5;
+const JUMP_TIME = 6;
+function getPosZ(entity: Entity, keyframe: number, drillsState: DrillsState): number {
+  const animation = drillsState.animations[0];
+  let posZ = 1;
+  const currentAction = actionForKeyframe(entity, animation.actions, keyframe);
+  if (currentAction && currentAction.jumping) {
+    const timeToNext = currentAction.endFrame - keyframe;
+    if (timeToNext <= JUMP_TIME) {
+      posZ = JUMP_TIME + 1 - timeToNext;
+    }
+  }
+  if (posZ === 1) {
+    const lastAction = getLastAction(entity, keyframe, drillsState);
+    if (lastAction && lastAction.jumping) {
+      const timeSinceLast = keyframe - lastAction.endFrame;
+      if (timeSinceLast <= JUMP_TIME) {
+        posZ = JUMP_TIME + 1 - timeSinceLast;
+      }
+    }
+  }
+  return Math.max(1, posZ / SCALE);
+}
+
+export function getLastAction(entity: Entity, keyframe: number,
+                              drillsState: DrillsState): EntityAction|undefined {
+  const animation = drillsState.animations[0];
+  // Sort the actions from start to finish. TODO is that true?
+  const sorted = animation.actions.filter(action => action.targetId === entity.id)
+                     .sort((a, b) => b.endFrame - a.endFrame);
+  for (const action of sorted) {
+    if (action.endFrame < keyframe) {
+      return action;
+    }
+  }
+  return undefined;
 }
 
 export function startPositionForAction(entity: Entity, keyframe: number, possessions: Possession[],
                                        drillsState: DrillsState): AbsolutePosition {
   const animation = drillsState.animations[0];
-  // Sort the actions from start to finish
+  // Sort the actions from start to finish. TODO is that true?
   const sorted = animation.actions.filter(action => action.targetId === entity.id)
                      .sort((a, b) => b.endFrame - a.endFrame);
   // Find the most recent action.
@@ -170,7 +219,8 @@ export function startPositionForAction(entity: Entity, keyframe: number, possess
       }
       return {
         ...resolvePosition(action.end, entity, test, possessions, drillsState),
-        rotation: action.rotation.degrees,
+        rotation : action.rotation.degrees,
+        posZ : getPosZ(entity, keyframe, drillsState),
       };
     }
     lastKeyframe = action.startFrame;
@@ -179,7 +229,8 @@ export function startPositionForAction(entity: Entity, keyframe: number, possess
   const tmp = sorted[sorted.length - 1];
   return {
     ...resolvePosition(tmp.end, entity, keyframe, possessions, drillsState),
-    rotation: tmp.rotation.degrees,
+    rotation : tmp.rotation.degrees,
+    posZ : getPosZ(entity, keyframe, drillsState),
   };
 }
 
@@ -197,18 +248,24 @@ function resolvePosition(pos: AnimationEnd, entity: Entity, keyframe: number,
   }
 }
 
-export function endPositionForAction(action: EntityAction, keyframe: number,
+export function endPositionForAction(entity: Entity, action: EntityAction, keyframe: number,
                                      drillsState: DrillsState): AbsolutePosition {
   const animation = drillsState.animations[0];
   if (action.end.type === 'POSITION') {
-    return {...action.end.endPos, rotation: action.rotation.degrees};
+    return {
+      ...action.end.endPos,
+      rotation : action.rotation.degrees,
+      posZ : getPosZ(entity, keyframe, drillsState)
+    };
   } else {
-    const entity = entityWithId(animation.entities, action.end.entityId);
-    if (!entity) {
+    const possessor = entityWithId(animation.entities, action.end.entityId);
+    if (!possessor) {
       throw new Error('Unknown entity with ID ' + action.end.entityId);
     }
-    return {...positionForKeyframeHelper(entity, action.endFrame, drillsState),
-      rotation: action.rotation.degrees};
+    return {
+      ...positionForKeyframeHelper(possessor, action.endFrame, drillsState),
+      rotation : action.rotation.degrees
+    };
   }
 }
 

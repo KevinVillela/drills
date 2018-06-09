@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {FormBuilder, FormControl, FormGroup, Validators, AbstractControl} from '@angular/forms';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore';
@@ -7,7 +7,7 @@ import {Observable} from 'rxjs/Observable';
 import {take} from 'rxjs/operators';
 
 import {getAnimations, LoadAnimation} from '../model/model';
-import {Animation, Drill, DrillFocus, DrillsState} from '../model/types';
+import {Animation, Drill, DrillFocus, DrillsState, Environment} from '../model/types';
 
 @Component({
   selector : 'drills-edit',
@@ -32,6 +32,7 @@ export class EditDrillComponent implements OnInit {
     {viewValue : 'Phase V', value: 5},
   ];
   readonly focuses = Object.keys(DrillFocus).filter(key => isNaN(Number(DrillFocus[key])));
+  readonly environments = Object.values(Environment).filter(key => isNaN(Number(Environment[key])));
 
   readonly durations = [ 1, 2, 5, 10, 15, 20, 25, 30, 45, 60 ];
   readonly items: Observable<DrillsState>;
@@ -45,6 +46,7 @@ export class EditDrillComponent implements OnInit {
     this.form = this.fb.group({
       name : [ '', Validators.required ],
       description : [ '', Validators.required ],
+      environment : [],
       minLevel : [ this.levels[0], Validators.required ],
       maxLevel : [ this.levels[0], Validators.required ],
       focus : [],
@@ -53,10 +55,16 @@ export class EditDrillComponent implements OnInit {
       minPlayers : [ 0, Validators.required ],
       maxPlayers : [ 0, Validators.required ],
       idealPlayers : [ 0, Validators.required ],
+      verified: [ false, Validators.required],
     });
     route.params.subscribe((params: Params) => {
       this.drillId = params['id'];
-      if (this.drillId !== undefined) {
+      if (this.drillId == null) {
+          this.store.dispatch(new LoadAnimation({
+             entities: [],
+             actions: [],
+           }));
+      } else {
         this.currentDrillDoc = this.db.doc(`drills/${this.drillId}`);
         this.currentDrillDoc.valueChanges().subscribe((drill) => {
           if (!drill) {
@@ -67,23 +75,29 @@ export class EditDrillComponent implements OnInit {
           //   return action;
           // });
           this.store.dispatch(new LoadAnimation(drill.animations[0]));
-          // this.store.dispatch(new LoadAnimation({
-          //   entities: [],
-          //   actions: [],
-          // }));
-          this.form.get('name')!.setValue(drill.name);
-          this.form.get('description')!.setValue(drill.description);
-          this.form.get('minLevel')!.setValue(drill.minLevel);
-          this.form.get('maxLevel')!.setValue(drill.maxLevel);
-          this.form.get('focus')!.setValue(drill.focus);
-          this.form.get('duration')!.setValue(drill.duration);
-          this.form.get('phase')!.setValue(drill.phase);
-          this.form.get('minPlayers')!.setValue(drill.minPlayers);
-          this.form.get('maxPlayers')!.setValue(drill.maxPlayers);
-          this.form.get('idealPlayers')!.setValue(drill.idealPlayers);
+          this.getForm('name').setValue(drill.name);
+          this.getForm('description').setValue(drill.description);
+          this.getForm('environment').setValue(drill.environment);
+          this.getForm('minLevel').setValue(drill.minLevel);
+          this.getForm('maxLevel').setValue(drill.maxLevel);
+          this.getForm('focus').setValue(drill.focus);
+          this.getForm('duration').setValue(drill.duration);
+          this.getForm('phase').setValue(drill.phase);
+          this.getForm('minPlayers').setValue(drill.minPlayers);
+          this.getForm('maxPlayers').setValue(drill.maxPlayers);
+          this.getForm('idealPlayers').setValue(drill.idealPlayers);
+          this.getForm('verified').setValue(drill.verified || false);
         });
       }
     });
+  }
+
+  private getForm(name: string): AbstractControl {
+    const form = this.form.get(name);
+    if (!form) {
+      throw new Error(`Could not find form of name ${name}`);
+    }
+    return form;
   }
 
   ngOnInit() {}
@@ -91,6 +105,7 @@ export class EditDrillComponent implements OnInit {
   save() {
     if (!this.form.valid) {
       alert('Please fix form errors before saving.');
+      return;
     }
     let currentAnimations: Animation[]|null = null;
     this.store.select(getAnimations)
@@ -100,16 +115,18 @@ export class EditDrillComponent implements OnInit {
       currentAnimations = [ {entities : [], actions : []} ];
     }
     const drill: Drill = {
-      name : this.form.get('name')!.value,
-      description : this.form.get('description')!.value,
-      minLevel : this.form.get('minLevel')!.value,
-      maxLevel : this.form.get('maxLevel')!.value,
-      focus : this.form.get('focus')!.value,
-      duration : this.form.get('duration')!.value,
-      phase : this.form.get('phase')!.value,
-      minPlayers : this.form.get('minPlayers')!.value,
-      maxPlayers : this.form.get('maxPlayers')!.value,
-      idealPlayers : this.form.get('idealPlayers')!.value,
+      name : this.getForm('name').value,
+      description : this.getForm('description').value,
+      environment: this.getForm('environment').value,
+      minLevel : this.getForm('minLevel').value,
+      maxLevel : this.getForm('maxLevel').value,
+      focus : this.getForm('focus').value,
+      duration : this.getForm('duration').value,
+      phase : this.getForm('phase').value,
+      minPlayers : this.getForm('minPlayers').value,
+      maxPlayers : this.getForm('maxPlayers').value,
+      idealPlayers : this.getForm('idealPlayers').value,
+      verified: this.getForm('verified').value,
       animations : currentAnimations,
     };
     if (this.drillId !== undefined) {

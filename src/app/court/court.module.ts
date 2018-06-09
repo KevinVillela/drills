@@ -24,7 +24,6 @@ export class ArrayPipe implements PipeTransform {
     MatSliderModule,
     MatButtonModule,
   ],
-  providers: [IconService],
   declarations: [CourtComponent, ArrayPipe],
   exports: [CourtComponent, ArrayPipe],
 })

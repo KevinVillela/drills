@@ -70,6 +70,10 @@ export interface EntityAction {
    * moving to the ball to set it. If unset, there is no player set for this action yet.
    */
   // playerStartFrame?: number;
+  /**
+   * True iff the action is performed while mid-air, e.g. jump-setting.
+   */
+  jumping: boolean;
   end: AnimationEnd;
   /**
    * The ending rotation of the entity.
@@ -97,6 +101,11 @@ export enum DrillFocus {
   SERVING = 'Serving'
 }
 
+export enum Environment {
+  BEACH = 'Beach',
+  COURT = 'Court',
+}
+
 /** State about the drill itself */
 export interface Drill {
   animations: Animation[];
@@ -117,6 +126,12 @@ export interface Drill {
   maxPlayers: number;
   /** The ideal number of players for this drill */
   idealPlayers: number;
+  environment: Environment[];
+  /**
+   * Whether the drill has been verified by the administrators. TODO actually restrict this field
+   * to admins.
+   */
+  verified?: boolean;
 }
 
 export interface DrillsState extends Drill {
@@ -131,7 +146,8 @@ export interface DrillsState extends Drill {
 
 export enum EntityType {
   VOLLEYBALL = 'VOLLEYBALL',
-  PLAYER = 'PLAYER'
+  PLAYER = 'PLAYER',
+  CONE = 'CONE',
 }
 
 export interface Position {
@@ -140,6 +156,7 @@ export interface Position {
 }
 
 export interface AbsolutePosition extends Position {
+  posZ: number;
   rotation: number;
 }
 

@@ -1,11 +1,9 @@
-<button mat-icon-button (click)="new()">
-    <mat-icon>add</mat-icon>
-  </button>
 <div *ngFor="let drill of drills | async">
   <span class="row">
     <h3>{{drill.name}}</h3>
-    <button mat-icon-button (click)="edit(drill.id)">
-      <mat-icon>edit</mat-icon>
+    <button mat-icon-button [routerLink]="'edit/' + drill.id">
+      <mat-icon matTooltip="Edit this drill">edit</mat-icon>
     </button>
+    <mat-icon class="check" matTooltip="This drill has been verified by our administrators" *ngIf="drill.verified">check</mat-icon>
   </span>
 </div>

@@ -1,7 +1,7 @@
 import {HttpClientModule} from '@angular/common/http';
 import {NgModule} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {MatButtonModule, MatIconRegistry, MatSlideToggleModule} from '@angular/material';
+import {MatButtonModule, MatIconRegistry, MatSlideToggleModule, MatToolbarModule, MatTooltipModule} from '@angular/material';
 import {MatIconModule} from '@angular/material/icon';
 import {MatSliderModule} from '@angular/material/slider';
 import {BrowserModule} from '@angular/platform-browser';
@@ -15,6 +15,7 @@ const ROUTES: Routes = [
   {path: '', component: HomeComponent, pathMatch: 'full'},
   {path: 'edit', component: EditDrillComponent, pathMatch: 'full'},
   {path: 'edit/:id', component: EditDrillComponent, pathMatch: 'full'},
+  {path: 'about', component: AboutComponent, pathMatch: 'full'},
 ];
 
 @NgModule({
@@ -34,7 +35,12 @@ const ROUTES: Routes = [
     EditModule,
     HomeModule,
     AngularFireModule.initializeApp(environment.firebase),
-    AngularFirestoreModule
+    AngularFirestoreModule,
+    AboutModule,
+    MatToolbarModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule
   ],
   providers: [],
   bootstrap: [AppComponent]
@@ -51,7 +57,9 @@ export class AppModule {
         'player_yellow', sanitizer.bypassSecurityTrustResourceUrl('assets/player_yellow.svg'));
     iconRegistry.addSvgIcon(
         'player_green', sanitizer.bypassSecurityTrustResourceUrl('assets/player_green.svg'));
-  }
+    iconRegistry.addSvgIcon(
+        'cone_orange', sanitizer.bypassSecurityTrustResourceUrl('assets/cone_orange.svg'));
+        }
 }
 
 import {ActionComponent} from './action/action.component';
@@ -67,4 +75,6 @@ import { HomeModule } from './home/home.module';
 import { AngularFireModule } from 'angularfire2';
 import { environment } from '../environments/environment.prod';
 import { AngularFirestoreModule } from 'angularfire2/firestore';
+import { AboutComponent } from './about/about.component';
+import { AboutModule } from './about/about.module';
 

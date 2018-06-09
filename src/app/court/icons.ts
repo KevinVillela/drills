@@ -34,7 +34,7 @@ export class IconService {
     this.store.select(getSelectedEntityId).subscribe((val) => { this.selectedEntityId = val; });
     this.store.select(getCurrentAction).subscribe((val) => { this.currentAction = val; });
     const callbacks =
-        [ 'volleyball', 'player_white', 'player_blue', 'player_yellow', 'player_green' ].map(
+        [ 'volleyball', 'player_white', 'player_blue', 'player_yellow', 'player_green', 'cone_orange' ].map(
             (url) => {
               return (bindCallback(fabric.loadSVGFromURL) as any)(`assets/${url}.svg`)
                   .pipe(map(([ objects, options ]) => {

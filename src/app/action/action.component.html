@@ -3,16 +3,25 @@
     {{type | lowercase}}
   </mat-radio-button>
 </mat-radio-group>
+<mat-slide-toggle [disabled]="false" [ngModel]="jumping | async" (ngModelChange)="onJumpChange($event)">
+  Jumping
+</mat-slide-toggle>
 <div>
   Start
-  <mat-slider #startSlider thumb-label="true" min="1" max="90" step="1" [ngModel]="start | async" (input)="onLengthChange($event.value, endSlider.value)">
+  <mat-slider #startSlider thumb-label="true" min="1" max="100" step="1" [ngModel]="start | async" (input)="onLengthChange($event.value, endSlider.value)">
   </mat-slider>
 </div>
 <div>
   End
-  <mat-slider #endSlider thumb-label="true" min="1" max="90" step="1" [ngModel]="end | async" (input)="$event.value > startSlider?.value && onEndChange($event.value)">
+  <mat-slider #endSlider thumb-label="true" min="1" max="100" step="1" [ngModel]="end | async" (input)="$event.value > startSlider?.value && onEndChange($event.value)">
   </mat-slider>
 </div>
 <button mat-icon-button (click)="delete()" *ngIf="(currentAction | async) !== undefined">
   <mat-icon>delete</mat-icon>
+</button>
+<button mat-icon-button (click)="rotate(90)" *ngIf="(currentAction | async) !== undefined">
+  <mat-icon>rotate_right</mat-icon>
+</button>
+<button mat-icon-button (click)="rotate(-90)" *ngIf="(currentAction | async) !== undefined">
+  <mat-icon>rotate_left</mat-icon>
 </button>
