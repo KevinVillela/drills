@@ -108,6 +108,7 @@ export enum Environment {
 
 /** State about the drill itself */
 export interface Drill {
+  id?: string;
   animations: Animation[];
   name: string;
   description: string;
@@ -175,3 +176,20 @@ export interface Animation {
   entities: Entity[];
   actions: EntityAction[];
 }
+
+export const FOCUSES = Object.keys(DrillFocus).filter(key => isNaN(Number(DrillFocus[key])));
+export const ENVIRONMENTS = Object.values(Environment).filter(key => isNaN(Number(Environment[key])));
+export const LEVELS = [
+  {viewValue : 'Beginner', value: 1},
+  {viewValue : 'Intermediate', value: 2},
+  {viewValue : 'Advanced', value: 3},
+  {viewValue : 'Expert', value: 4},
+  {viewValue : 'Professional', value: 5},
+];
+export const PHASES = [
+  {viewValue : 'Phase I', value: 1},
+  {viewValue : 'Phase II', value: 2},
+  {viewValue : 'Phase III', value: 3},
+  {viewValue : 'Phase IV', value: 4},
+  {viewValue : 'Phase V', value: 5},
+];

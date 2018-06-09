@@ -1,21 +1,39 @@
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HomeComponent } from './home.component';
-import { AngularFireModule } from 'angularfire2';
-import { MatButtonModule, MatIconModule, MatTooltipModule, MatToolbarModule } from '@angular/material';
-import { RouterModule } from '@angular/router';
+import {CommonModule} from '@angular/common';
+import {NgModule} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {
+  MatButtonModule,
+  MatExpansionModule,
+  MatIconModule,
+  MatInputModule,
+  MatSelect,
+  MatSelectModule,
+  MatToolbarModule,
+  MatTooltipModule
+} from '@angular/material';
+import {RouterModule} from '@angular/router';
+import {AngularFireModule} from 'angularfire2';
+
+import {HomeComponent, SearchFilterPipe} from './home.component';
+import { CourtModule } from '../court/court.module';
 
 @NgModule({
-  imports: [
+  imports : [
     CommonModule,
     AngularFireModule,
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
     MatToolbarModule,
-    RouterModule
+    RouterModule,
+    MatSelectModule,
+    FormsModule,
+    MatInputModule,
+    MatExpansionModule,
+    CourtModule,
   ],
-  declarations: [HomeComponent],
-  exports: [HomeComponent],
+  declarations : [ HomeComponent, SearchFilterPipe ],
+  exports : [ HomeComponent ],
 })
-export class HomeModule { }
+export class HomeModule {
+}

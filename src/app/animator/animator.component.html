@@ -5,13 +5,6 @@
     <drills-action></drills-action>
   </div>
   <div>
-    <mat-slider thumb-label="true" min="0" [max]="max | async" step="1" (input)="onChange($event)" [value]="keyframeIndex | async">
-    </mat-slider>
-    <button mat-icon-button (click)="play()">
-      <mat-icon>{{playing.getValue() ? 'pause' : 'play_arrow'}}</mat-icon>
-    </button>
-  </div>
-  <div>
     Speed
     <mat-slider thumb-label="true" min="30" max="200" step="10" invert (input)="onSpeedChange($event)">
     </mat-slider>

@@ -18,7 +18,7 @@ import {
   startPositionForAction
 } from './animation';
 import {sampleState} from './json';
-import {AnimationEndPosition, Position, Environment} from './types';
+import {AnimationEndPosition, Environment, Position} from './types';
 import {
   Animation,
   AnimationEnd,
@@ -39,7 +39,7 @@ export const initialState: DrillsState = {
   } ],
   name : 'Sample Drill',
   description : '',
-  environment: [Environment.BEACH],
+  environment : [ Environment.BEACH ],
   minLevel : 1,
   maxLevel : 1,
   focus : [],
@@ -197,6 +197,9 @@ export type ActionTypes = Rotate|SetRotation|LoadAnimation|ChangeAction|ChangeAc
 export const getDrillsState =
     createSelector((state: {drillsState: DrillsState}) => state.drillsState,
                    (drillsState: DrillsState) => drillsState);
+
+export const getDrillId =
+    createSelector(getDrillsState, drillsState => drillsState.id);
 
 export const getEntities =
     createSelector(getDrillsState, drillsState => drillsState.animations[0].entities);

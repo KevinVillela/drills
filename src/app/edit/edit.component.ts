@@ -7,7 +7,7 @@ import {Observable} from 'rxjs/Observable';
 import {take} from 'rxjs/operators';
 
 import {getAnimations, LoadAnimation} from '../model/model';
-import {Animation, Drill, DrillFocus, DrillsState, Environment} from '../model/types';
+import {Animation, Drill, DrillFocus, DrillsState, Environment, FOCUSES, ENVIRONMENTS, LEVELS, PHASES} from '../model/types';
 
 @Component({
   selector : 'drills-edit',
@@ -16,23 +16,12 @@ import {Animation, Drill, DrillFocus, DrillsState, Environment} from '../model/t
 })
 export class EditDrillComponent implements OnInit {
   readonly form: FormGroup;
-  readonly levels = [
-    {viewValue : 'Beginner', value: 1},
-    {viewValue : 'Intermediate', value: 2},
-    {viewValue : 'Advanced', value: 3},
-    {viewValue : 'Expert', value: 4},
-    {viewValue : 'Professional', value: 5},
-  ];
+  readonly levels = LEVELS;
 
-  readonly phases = [
-    {viewValue : 'Phase I', value: 1},
-    {viewValue : 'Phase II', value: 2},
-    {viewValue : 'Phase III', value: 3},
-    {viewValue : 'Phase IV', value: 4},
-    {viewValue : 'Phase V', value: 5},
-  ];
-  readonly focuses = Object.keys(DrillFocus).filter(key => isNaN(Number(DrillFocus[key])));
-  readonly environments = Object.values(Environment).filter(key => isNaN(Number(Environment[key])));
+  readonly phases = PHASES;
+
+  readonly focuses = FOCUSES;
+  readonly environments = ENVIRONMENTS;
 
   readonly durations = [ 1, 2, 5, 10, 15, 20, 25, 30, 45, 60 ];
   readonly items: Observable<DrillsState>;

@@ -9,13 +9,14 @@ import {
   ViewChild
 } from '@angular/core';
 import {ChangeDetectionStrategy} from '@angular/core';
-import {MatInputBase} from '@angular/material';
+import {MatInputBase, MatSliderChange} from '@angular/material';
 import {Store} from '@ngrx/store';
 import {EventEmitter} from 'events';
 import {fabric} from 'fabric';
 import {Observable} from 'rxjs/Observable';
 import {combineLatest as combineLatestStatic} from 'rxjs/observable/combineLatest';
-import {combineLatest, map, mapTo, merge, mergeMap, tap, withLatestFrom} from 'rxjs/operators';
+import {combineLatest, map, mapTo, merge, mergeMap, tap, withLatestFrom, switchMap} from 'rxjs/operators';
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 
 import {actionForKeyframe, AnimationService} from '../model/animation';
 import {
@@ -32,6 +33,10 @@ import {
   percentOfAction,
   percentOfActionHelper,
   SelectEntity,
+  InterpolateChange,
+  PastChange,
+  UpdateKeyframeIndex,
+  getDrillId,
 } from '../model/model';
 import {
   AbsolutePosition,
@@ -46,6 +51,7 @@ import {
 } from '../model/types';
 
 import {IconService} from './icons';
+import { interval } from 'rxjs/observable/interval';
 
 export const COURT_SIZE = 400;
 export const COURT_BORDER = 50;
@@ -58,13 +64,18 @@ export const COURT_BORDER = 50;
   providers: [IconService],
 })
 export class CourtComponent implements OnInit, AfterViewInit {
+  max: Observable<number>;
   currentEntity: Entity|undefined;
   interpolate: number;
   past: number;
   entities: Observable<Entity[]>;
   keyframeIndex = 0;
   canvas: fabric.Canvas;
+
+  @Input() drillId: string|undefined;
+
   private selectedEntityId: number|undefined = undefined;
+  readonly playing = new BehaviorSubject<boolean>(false);
   /** A map from entity-offset combo to if it is animating or not. */
   private readonly isAnimating = new Map<string, boolean>();
 
@@ -74,6 +85,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
               private readonly animationService: AnimationService) {}
 
   ngOnInit() {
+    this.max = this.store.select(maxAnimationLength);
     this.cd.markForCheck();
     this.store.select(state => state.drillsState.keyframeIndex).subscribe(val => {
       this.keyframeIndex = val;
@@ -85,6 +97,27 @@ export class CourtComponent implements OnInit, AfterViewInit {
     this.store.select(state => state.drillsState.past).subscribe(val => { this.past = val; });
     this.store.select(getSelectedEntityId).subscribe(val => { this.selectedEntityId = val; });
     this.store.select(currentEntity).subscribe(entity => { this.currentEntity = entity; });
+    combineLatestStatic(this.playing, this.store.select((state) => state.drillsState.speed))
+    .pipe(switchMap(([_, period]) => interval(period)))
+    .subscribe(() => {
+      if (this.playing.getValue()) {
+        this.store.dispatch(new NextFrame());
+      }
+    });
+  }
+
+
+  onChange(change: MatSliderChange) {
+    const keyframeIndex = change.value;
+    if (keyframeIndex != null) {
+      this.store.dispatch(new UpdateKeyframeIndex(keyframeIndex));
+    }
+  }
+
+  play() {
+    this.store.dispatch(new InterpolateChange(0));
+    this.store.dispatch(new PastChange(0));
+    this.playing.next(!this.playing.getValue());
   }
 
   private async drawEntity(entity: Entity, actions: EntityAction[], pos: AbsolutePosition|null,
@@ -153,7 +186,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.canvas = new fabric.Canvas('c', {
+    this.canvas = new fabric.Canvas(this.drillId || 'c', {
       backgroundColor : 'red',
       width : COURT_SIZE / 2 + COURT_BORDER * 2,
       height : COURT_SIZE + COURT_BORDER * 2,
@@ -209,36 +242,12 @@ export class CourtComponent implements OnInit, AfterViewInit {
         // this.canvas.renderAll();
       }
     });
-    const canvas = document.getElementById('c');
-    if (!canvas) {
-      throw new Error('Unable to find canvas');
-    }
-    fabric.util.addListener(canvas, 'contextmenu', function(e) {
-      console.log('hi');
-      e.preventDefault();
-    });
-    canvas.addEventListener('contextmenu', function(e) {
-      console.log('hi');
-      e.preventDefault();
-    });
-    // this.canvas.renderAll();
-    // this.canvas.on('touch:drag', function (options) {
-    //   console.log('drop');
-    //   const entityObject = options.target;
-    //   if (entityObject) {
-    //   }
-    // });
     this.store.select(getDrawState).subscribe(() => { console.log('draw!'); });
     setTimeout(() => this.cd.markForCheck(), 100);
     this.iconService.getIcons().subscribe(icons => {
       if (icons.size === 0) {
         return;
       }
-      // combineLatestStatic(
-      //   this.store.select((state) => state.drillsState.entities),
-      //   this.store.select((state) => state.drillsState.interpolate),
-      //   this.store.select((state) => state.drillsState.past),
-      //   this.store.select((state) => state.drillsState.keyframeIndex))
       this.store.select(getDrawState).subscribe(({entities, interpolate, actions, past}) => {
         this.resetCanvas();
         const allEntityIds = new Set<string>();
@@ -255,10 +264,6 @@ export class CourtComponent implements OnInit, AfterViewInit {
           this.drawEntity(entity, actions, this.getPos(entities, entity, actions));
           allEntityIds.add(getId(entity, 0));
         });
-        // this.iconService.getIconsToDelete(allEntityIds).forEach((icon) =>
-        // {
-        //   this.canvas.remove(icon);
-        // })
         this.canvas.renderAll();
       });
     });
