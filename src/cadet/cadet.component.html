@@ -1,0 +1,15 @@
+<drills-filter (filterChange)="filter = $event"></drills-filter>
+<button mat-raised-button (click)="generate()">Generate Practice</button>
+<mat-accordion>
+  <div *ngFor="let phase of phases" class="container">
+    <ng-container *ngIf="drillForPhaseInPlan(phase.value); let drill; else noDrill">
+      <button mat-icon-button (click)="refresh(phase.value)" matTooltip="Randomize drill for phase {{phase.value}}">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <drills-preview [drill]="drill"></drills-preview>
+    </ng-container>
+    <ng-template #noDrill>
+      No drill for phase {{phase.value}}
+    </ng-template>
+  </div>
+</mat-accordion>

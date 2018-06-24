@@ -37,6 +37,7 @@ import {
   PastChange,
   UpdateKeyframeIndex,
   getDrillId,
+  NextEntityColor,
 } from '../model/model';
 import {
   AbsolutePosition,
@@ -186,7 +187,8 @@ export class CourtComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.canvas = new fabric.Canvas(this.drillId || 'c', {
+    const canvasId = this.drillId || 'c';
+    this.canvas = new fabric.Canvas(canvasId, {
       backgroundColor : 'red',
       width : COURT_SIZE / 2 + COURT_BORDER * 2,
       height : COURT_SIZE + COURT_BORDER * 2,
@@ -222,6 +224,15 @@ export class CourtComponent implements OnInit, AfterViewInit {
                  offset} = {entityId : parseInt(parts[0], 10), offset : parseInt(parts[1], 10)};
           this.store.dispatch(new SelectEntity(entityId, offset));
         }
+      } else {
+        // This means we clicked on the canvas
+        this.store.dispatch(new AddEntity({type: EntityType.PLAYER, icon: 'player_white'}, {
+          type: 'POSITION',
+          endPos: {
+            posX: event.e.offsetX,
+            posY: event.e.offsetY,
+          }
+        }));
       }
     });
     this.canvas.on('mouse:down', event => {

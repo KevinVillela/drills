@@ -14,8 +14,10 @@ import {
 import {RouterModule} from '@angular/router';
 import {AngularFireModule} from 'angularfire2';
 
-import {HomeComponent, SearchFilterPipe} from './home.component';
+import {HomeComponent} from './home.component';
 import { CourtModule } from '../court/court.module';
+import { FilterModule } from '../../filter/filter.module';
+import { PreviewModule } from '../../preview/preview.module';
 
 @NgModule({
   imports : [
@@ -31,8 +33,10 @@ import { CourtModule } from '../court/court.module';
     MatInputModule,
     MatExpansionModule,
     CourtModule,
+    FilterModule,
+    PreviewModule
   ],
-  declarations : [ HomeComponent, SearchFilterPipe ],
+  declarations : [ HomeComponent ],
   exports : [ HomeComponent ],
 })
 export class HomeModule {

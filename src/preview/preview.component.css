@@ -1,0 +1,16 @@
+mat-panel-description {
+  justify-content: center;
+  align-items: center;
+}
+
+.right {
+  margin-left: auto;
+}
+
+.check {
+  color: green;
+}
+
+.content {
+  display: flex;
+}

@@ -1,54 +1,6 @@
 <div>
-  <mat-form-field>
-    <mat-select placeholder="Drill Environment" multiple [(ngModel)]="filter.environment">
-      <mat-option *ngFor="let environment of environments" [value]="environment">
-        {{ environment }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-select placeholder="Minimum Level" [(ngModel)]="filter.minLevel">
-      <mat-option *ngFor="let level of levels" [value]="level.value">
-        {{ level.viewValue }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-select placeholder="Maximum Level" [(ngModel)]="filter.maxLevel">
-      <mat-option *ngFor="let level of levels" [value]="level.value">
-        {{ level.viewValue }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-  <mat-form-field>
-    <mat-select [(ngModel)]="filter.focus" placeholder="Drill Focus" multiple>
-      <mat-option *ngFor="let focus of focuses" [value]="focus">
-        {{ focus }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-  <mat-form-field>
-    <input type="number" matInput [(ngModel)]="filter.idealPlayers" placeholder="Number of players" />
-  </mat-form-field>
+  <drills-filter (filterChange)="filter = $event"></drills-filter>
 </div>
 <mat-accordion>
-  <mat-expansion-panel *ngFor="let drill of drills | async | search:filter" (opened)="drillOpened(drill)">
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <h3>{{drill.name}}</h3>
-      </mat-panel-title>
-      <mat-panel-description>
-        {{drill.minPlayers}} - {{drill.maxPlayers}} players of level {{getLevelLabel(drill)}}
-        <mat-icon [style.color]="'orange'" matTooltip="This drill can be performed on the Beach" *ngIf="drill.environment.includes('Beach')">wb_sunny</mat-icon>
-        <mat-icon [style.color]="'brown'" matTooltip="This drill can be performed on Hard Court" *ngIf="drill.environment.includes('Court')">settings_overscan</mat-icon>
-        <mat-icon class="check" matTooltip="This drill has been verified by our administrators" *ngIf="drill.verified">check</mat-icon>
-        <button mat-icon-button class="right" [routerLink]="'edit/' + drill.id!">
-          <mat-icon matTooltip="Edit this drill">edit</mat-icon>
-        </button>
-      </mat-panel-description>
-    </mat-expansion-panel-header>
-    <ng-template matExpansionPanelContent>
-      <drills-court [drillId]="drill.id"></drills-court>
-    </ng-template>
-  </mat-expansion-panel>
+  <drills-preview *ngFor="let drill of drills | async | search:filter" [drill]="drill"></drills-preview>
 </mat-accordion>

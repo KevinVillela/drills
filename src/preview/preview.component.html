@@ -1,0 +1,22 @@
+<mat-expansion-panel (opened)="drillOpened(drill)">
+  <mat-expansion-panel-header>
+    <mat-panel-title>
+      <h3>{{drill.name}}</h3>
+    </mat-panel-title>
+    <mat-panel-description>
+      {{drill.minPlayers}} - {{drill.maxPlayers}} players of level {{getLevelLabel(drill)}}
+      <mat-icon [style.color]="'orange'" matTooltip="This drill can be performed on the Beach" *ngIf="drill.environment.includes('Beach')">wb_sunny</mat-icon>
+      <mat-icon [style.color]="'brown'" matTooltip="This drill can be performed on Hard Court" *ngIf="drill.environment.includes('Court')">settings_overscan</mat-icon>
+      <mat-icon class="check" matTooltip="This drill has been verified by our administrators" *ngIf="drill.verified">check</mat-icon>
+      <button mat-icon-button class="right" [routerLink]="'/edit/' + drill.id!">
+        <mat-icon matTooltip="Edit this drill">edit</mat-icon>
+      </button>
+    </mat-panel-description>
+  </mat-expansion-panel-header>
+  <ng-template matExpansionPanelContent>
+    <div class="content">
+      <span>{{drill.description}}</span>
+      <drills-court [drillId]="drill.id"></drills-court>
+    </div>
+  </ng-template>
+</mat-expansion-panel>

@@ -135,6 +135,8 @@ export interface Drill {
   verified?: boolean;
 }
 
+export type DrillWithId = DrillsState&{id: string};
+
 export interface DrillsState extends Drill {
   // Playback state (could probably be a different store)
   /** The currently selected entity ID, if any. */
@@ -150,6 +152,15 @@ export enum EntityType {
   PLAYER = 'PLAYER',
   CONE = 'CONE',
 }
+
+export const ENTITY_TYPES = [
+  {type: EntityType.PLAYER, icon: 'player_white'},
+  {type: EntityType.PLAYER, icon: 'player_green'},
+  {type: EntityType.PLAYER, icon: 'player_blue'},
+  {type: EntityType.PLAYER, icon: 'player_yellow'},
+  {type: EntityType.VOLLEYBALL, icon: 'volleyball'},
+  {type: EntityType.CONE, icon: 'cone_orange'}
+];
 
 export interface Position {
   posX: number;

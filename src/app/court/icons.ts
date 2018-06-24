@@ -19,7 +19,7 @@ import {
   SetPosition,
   SetRotation
 } from '../model/model';
-import {AnimationEnd, DrillsState, Entity, EntityAction, EntityType} from '../model/types';
+import {AnimationEnd, DrillsState, Entity, EntityAction, EntityType, ENTITY_TYPES} from '../model/types';
 
 import {COURT_SIZE} from './court.component';
 
@@ -33,9 +33,8 @@ export class IconService {
   constructor(private readonly store: Store<{drillsState: DrillsState}>) {
     this.store.select(getSelectedEntityId).subscribe((val) => { this.selectedEntityId = val; });
     this.store.select(getCurrentAction).subscribe((val) => { this.currentAction = val; });
-    const callbacks =
-        [ 'volleyball', 'player_white', 'player_blue', 'player_yellow', 'player_green', 'cone_orange' ].map(
-            (url) => {
+    const callbacks = ENTITY_TYPES.map(
+            ({icon: url}) => {
               return (bindCallback(fabric.loadSVGFromURL) as any)(`assets/${url}.svg`)
                   .pipe(map(([ objects, options ]) => {
                     const svg = fabric.util.groupSVGElements(objects, options);
@@ -126,6 +125,9 @@ export class IconService {
                   new AddAction({type : 'ENTITY', entityId : entity.id}, entity.id));
             }
           }
+        });
+        res.on('keydown', () => {
+          console.log('KEYDOWN');
         });
         this.entityIconMap.set(id, res);
         resolve({svg : res, cached : false});

@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material';
 @NgModule({
   imports: [
     CommonModule,
-    MatIconModule
+    MatIconModule,
   ],
   declarations: [LegendComponent],
   exports: [LegendComponent]

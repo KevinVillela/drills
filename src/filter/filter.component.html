@@ -1,0 +1,33 @@
+<div>
+  <mat-form-field>
+    <mat-select placeholder="Drill Environment" multiple [(ngModel)]="filter.environment" (ngModelChange)="filterChange.emit(filter)">
+      <mat-option *ngFor="let environment of environments" [value]="environment">
+        {{ environment }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select placeholder="Minimum Level" [(ngModel)]="filter.minLevel" (ngModelChange)="filterChange.emit(filter)">
+      <mat-option *ngFor="let level of levels" [value]="level.value">
+        {{ level.viewValue }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select placeholder="Maximum Level" [(ngModel)]="filter.maxLevel" (ngModelChange)="filterChange.emit(filter)">
+      <mat-option *ngFor="let level of levels" [value]="level.value">
+        {{ level.viewValue }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select [(ngModel)]="filter.focus" placeholder="Drill Focus" multiple (ngModelChange)="filterChange.emit(filter)">
+      <mat-option *ngFor="let focus of focuses" [value]="focus">
+        {{ focus }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <input type="number" matInput [(ngModel)]="filter.idealPlayers" placeholder="Number of players" (ngModelChange)="filterChange.emit(filter)"/>
+  </mat-form-field>
+</div>

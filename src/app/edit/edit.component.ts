@@ -1,13 +1,24 @@
 import {Component, OnInit} from '@angular/core';
-import {FormBuilder, FormControl, FormGroup, Validators, AbstractControl} from '@angular/forms';
+import {AbstractControl, FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
 import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore';
 import {Observable} from 'rxjs/Observable';
 import {take} from 'rxjs/operators';
 
-import {getAnimations, LoadAnimation} from '../model/model';
-import {Animation, Drill, DrillFocus, DrillsState, Environment, FOCUSES, ENVIRONMENTS, LEVELS, PHASES} from '../model/types';
+import {getAnimations, LoadAnimation, NextEntityColor, Rotate, getCurrentAction} from '../model/model';
+import {
+  Animation,
+  Drill,
+  DrillFocus,
+  DrillsState,
+  Environment,
+  ENVIRONMENTS,
+  FOCUSES,
+  LEVELS,
+  PHASES,
+  EntityAction
+} from '../model/types';
 
 @Component({
   selector : 'drills-edit',
@@ -25,6 +36,7 @@ export class EditDrillComponent implements OnInit {
 
   readonly durations = [ 1, 2, 5, 10, 15, 20, 25, 30, 45, 60 ];
   readonly items: Observable<DrillsState>;
+  readonly currentAction: Observable<EntityAction|undefined>;
 
   currentDrillDoc: AngularFirestoreDocument<DrillsState>;
   drillId: string;
@@ -32,6 +44,28 @@ export class EditDrillComponent implements OnInit {
   constructor(private readonly fb: FormBuilder, private readonly db: AngularFirestore,
               route: ActivatedRoute, private readonly router: Router,
               private readonly store: Store<{}>) {
+
+    this.currentAction = store.select((getCurrentAction));
+    document.addEventListener('keydown', (event) => {
+
+      switch (event.key) {
+        case 'c':
+        this.store.dispatch(new NextEntityColor());
+        break;
+        case 'r':
+        this.store.dispatch(new Rotate(this.getActionIdOrDie(), 90));
+        break;
+        case 'R':
+        this.store.dispatch(new Rotate(this.getActionIdOrDie(), -90));
+        break;
+        case 's':
+          if (event.metaKey) {
+            event.preventDefault();
+            this.save();
+          }
+          break;
+      }
+    });
     this.form = this.fb.group({
       name : [ '', Validators.required ],
       description : [ '', Validators.required ],
@@ -44,15 +78,15 @@ export class EditDrillComponent implements OnInit {
       minPlayers : [ 0, Validators.required ],
       maxPlayers : [ 0, Validators.required ],
       idealPlayers : [ 0, Validators.required ],
-      verified: [ false, Validators.required],
+      verified : [ false, Validators.required ],
     });
     route.params.subscribe((params: Params) => {
       this.drillId = params['id'];
       if (this.drillId == null) {
-          this.store.dispatch(new LoadAnimation({
-             entities: [],
-             actions: [],
-           }));
+        this.store.dispatch(new LoadAnimation({
+          entities : [],
+          actions : [],
+        }));
       } else {
         this.currentDrillDoc = this.db.doc(`drills/${this.drillId}`);
         this.currentDrillDoc.valueChanges().subscribe((drill) => {
@@ -81,6 +115,19 @@ export class EditDrillComponent implements OnInit {
     });
   }
 
+  private getActionIdOrDie(): number {
+    let id: undefined|number;
+    this.currentAction.pipe(take(1)).subscribe((val) => {
+      if (val) {
+        id = val.id;
+      }
+    });
+    if (id == null) {
+      throw new Error('Could not get action ID');
+    }
+    return id;
+  }
+
   private getForm(name: string): AbstractControl {
     const form = this.form.get(name);
     if (!form) {
@@ -106,7 +153,7 @@ export class EditDrillComponent implements OnInit {
     const drill: Drill = {
       name : this.getForm('name').value,
       description : this.getForm('description').value,
-      environment: this.getForm('environment').value,
+      environment : this.getForm('environment').value,
       minLevel : this.getForm('minLevel').value,
       maxLevel : this.getForm('maxLevel').value,
       focus : this.getForm('focus').value,
@@ -115,7 +162,7 @@ export class EditDrillComponent implements OnInit {
       minPlayers : this.getForm('minPlayers').value,
       maxPlayers : this.getForm('maxPlayers').value,
       idealPlayers : this.getForm('idealPlayers').value,
-      verified: this.getForm('verified').value,
+      verified : this.getForm('verified').value,
       animations : currentAnimations,
     };
     if (this.drillId !== undefined) {

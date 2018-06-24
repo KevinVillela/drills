@@ -17,8 +17,7 @@ import {
   losesPossession,
   startPositionForAction
 } from './animation';
-import {sampleState} from './json';
-import {AnimationEndPosition, Environment, Position} from './types';
+import {AnimationEndPosition, ENTITY_TYPES, Environment, Position} from './types';
 import {
   Animation,
   AnimationEnd,
@@ -59,7 +58,15 @@ export const initialState: DrillsState = {
   past : 0
 };
 
-export function getId(entity: Entity, offset: number): string { return `${entity.id}-${offset}`; }
+export function getId(entity: Entity, offset: number): string {
+  return `${entity.id}-${entity.icon}-${offset}`;
+}
+
+export const NEXT_ENTITY_COLOR = 'NEXT_ENTITY_COLOR';
+
+export class NextEntityColor implements Action {
+  readonly type = NEXT_ENTITY_COLOR;
+}
 
 export const ADD_ENTITY = 'ADD_ENTITY';
 
@@ -190,16 +197,15 @@ export class LoadAnimation implements Action {
   constructor(readonly animation: Animation) {}
 }
 
-export type ActionTypes = Rotate|SetRotation|LoadAnimation|ChangeAction|ChangeActionJump|
-    ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|NextFrame|DeleteEntity|
-    SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
+export type ActionTypes = NextEntityColor|Rotate|SetRotation|LoadAnimation|ChangeAction|
+    ChangeActionJump|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|NextFrame|
+    DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
 
 export const getDrillsState =
     createSelector((state: {drillsState: DrillsState}) => state.drillsState,
                    (drillsState: DrillsState) => drillsState);
 
-export const getDrillId =
-    createSelector(getDrillsState, drillsState => drillsState.id);
+export const getDrillId = createSelector(getDrillsState, drillsState => drillsState.id);
 
 export const getEntities =
     createSelector(getDrillsState, drillsState => drillsState.animations[0].entities);
@@ -286,6 +292,22 @@ function getNextActionId(animation: Animation) {
 export function drillsReducer(state: DrillsState = initialState, action: ActionTypes): DrillsState {
   const animation = state.animations[0];
   switch (action.type) {
+  case NEXT_ENTITY_COLOR:
+    return {
+      ...state,
+      animations : [ {
+        ...animation,
+        entities : animation.entities.map((entity) => {
+          if (entity.id === state.selectedEntityId) {
+            const likeTypes = ENTITY_TYPES.filter((entityType) => entityType.type === entity.type);
+            const colorIndex = likeTypes.findIndex((entityType) => entityType.icon === entity.icon);
+            const newType = likeTypes[(colorIndex + 1) % likeTypes.length];
+            return {...entity, icon : newType.icon};
+          }
+          return entity;
+        }),
+      } ]
+    };
   case LOAD_ANIMATION:
     return {...state, animations : [ action.animation ]};
   case ADD_ENTITY: {
