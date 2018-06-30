@@ -38,6 +38,10 @@ import {
   UpdateKeyframeIndex,
   getDrillId,
   NextEntityColor,
+  SpeedChange,
+  getSpeed,
+  MIN_FPS,
+  MAX_FPS,
 } from '../model/model';
 import {
   AbsolutePosition,
@@ -72,6 +76,9 @@ export class CourtComponent implements OnInit, AfterViewInit {
   entities: Observable<Entity[]>;
   keyframeIndex = 0;
   canvas: fabric.Canvas;
+  speed: number;
+  readonly minFps = MIN_FPS;
+  readonly maxFps = MAX_FPS;
 
   @Input() drillId: string|undefined;
 
@@ -98,6 +105,9 @@ export class CourtComponent implements OnInit, AfterViewInit {
     this.store.select(state => state.drillsState.past).subscribe(val => { this.past = val; });
     this.store.select(getSelectedEntityId).subscribe(val => { this.selectedEntityId = val; });
     this.store.select(currentEntity).subscribe(entity => { this.currentEntity = entity; });
+    this.store.select(getSpeed).subscribe(speed => {
+      this.speed = speed;
+    });
     combineLatestStatic(this.playing, this.store.select((state) => state.drillsState.speed))
     .pipe(switchMap(([_, period]) => interval(period)))
     .subscribe(() => {
@@ -336,6 +346,21 @@ export class CourtComponent implements OnInit, AfterViewInit {
   }
 
   trackByIdx(index: number): number { return index; }
+
+  slow() {
+    this.store.dispatch(new SpeedChange(Math.min(this.speed * 2, 500)));
+  }
+
+  fast() {
+    this.store.dispatch(new SpeedChange(this.speed / 2));
+  }
+
+  onSpeedChange(change: MatSliderChange) {
+    if (change.value == null) {
+      throw new Error('Speed change event value was null');
+    }
+    this.store.dispatch(new SpeedChange(change.value));
+  }
 
   async export() {
     const gif = new (window as any).GIF({workers : 10, quality : 10});

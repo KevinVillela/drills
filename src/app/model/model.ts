@@ -31,6 +31,9 @@ import {
   Possession
 } from './types';
 
+export const MIN_FPS = 30;
+export const MAX_FPS = 200;
+
 export const initialState: DrillsState = {
   animations : [ {
     entities : [],
@@ -210,6 +213,9 @@ export const getDrillId = createSelector(getDrillsState, drillsState => drillsSt
 export const getEntities =
     createSelector(getDrillsState, drillsState => drillsState.animations[0].entities);
 
+    export const getSpeed =
+    createSelector(getDrillsState, drillsState => drillsState.speed);
+
 export const getKeyframeIndex =
     createSelector(getDrillsState, drillsState => drillsState.keyframeIndex);
 
@@ -221,14 +227,17 @@ export const getInterpolate =
     createSelector(getDrillsState, drillsState => drillsState.interpolate);
 
 export const getPast = createSelector(getDrillsState, drillsState => drillsState.past);
+export const getFuture = createSelector(getDrillsState, drillsState => drillsState.interpolate);
 
 export const getSelectedEntityId =
     createSelector(getDrillsState, drillsState => drillsState.selectedEntityId);
 
 export const getDrawState = createSelector(
     getEntities, getKeyframeIndex, getInterpolate, getActions, getPast, getSelectedEntityId,
-    (entities, keyframeIndex, interpolate, actions, past) =>
-        ({entities, keyframeIndex, interpolate, actions, past}));
+    (entities, keyframeIndex, interpolate, actions, past) => {
+      console.log('here');
+      return {entities, keyframeIndex, interpolate, actions, past};
+    });
 
 export const maxAnimationLength =
     createSelector(getActions, actions => maxAnimationLengthHelper(actions));
@@ -521,7 +530,7 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
   case UPDATE_KEYFRAME_INDEX:
     return {...state, keyframeIndex : action.index};
   case SPEED_CHANGE:
-    return {...state, speed : action.speed};
+    return {...state, speed : Math.max(Math.min(action.speed, MAX_FPS), MIN_FPS)};
   case INTERPOLATE_CHANGE:
     return {...state, interpolate : action.interpolate};
   case PAST_CHANGE:

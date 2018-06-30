@@ -1,4 +1,7 @@
 <form [formGroup]="form">
+  <h4 *ngIf="creator | async; let creatorSync">
+    Created By: {{creatorSync.displayName}}
+  </h4>
   <div>
     <mat-form-field>
       <input matInput formControlName="name" placeholder="Name of the Drill" />
@@ -11,14 +14,14 @@
     </mat-form-field>
   </div>
   <div>
-      <mat-form-field>
-        <mat-select formControlName="environment" placeholder="Drill Environment" multiple>
-          <mat-option *ngFor="let environment of environments" [value]="environment">
-            {{ environment }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-    </div>
+    <mat-form-field>
+      <mat-select formControlName="environment" placeholder="Drill Environment" multiple>
+        <mat-option *ngFor="let environment of environments" [value]="environment">
+          {{ environment }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
   <div>
     <mat-form-field>
       <mat-select formControlName="minLevel" placeholder="Min Level">
@@ -80,9 +83,9 @@
     </mat-form-field>
   </div>
   <div>
-      <mat-slide-toggle formControlName="verified">
-        Verified
-      </mat-slide-toggle>
+    <mat-slide-toggle formControlName="verified">
+      Verified
+    </mat-slide-toggle>
   </div>
   <button mat-button (click)="save()" matTooltip="Save your edits (shortcut: Cmd/Ctrl+s)">SAVE</button>
   <button mat-icon-button (click)="delete()" *ngIf="drillId">
@@ -90,4 +93,3 @@
   </button>
 </form>
 <drills-animator></drills-animator>
-<!-- <p>Form value: {{ form.value | json }}</p> -->

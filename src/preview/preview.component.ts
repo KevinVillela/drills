@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { Drill, LEVELS, DrillWithId } from '../app/model/types';
+import { Drill, LEVELS, DrillWithId, Environment } from '../app/model/types';
 import { Store } from '@ngrx/store';
 import { LoadAnimation } from '../app/model/model';
 import { Observable } from 'rxjs/Observable';
@@ -13,6 +13,7 @@ import { map } from 'rxjs/operators';
 })
 export class PreviewComponent implements OnInit {
   readonly levels = LEVELS;
+  readonly Environment = Environment;
 
   @Input() drill: Drill;
 

@@ -1,15 +1,115 @@
-<drills-filter (filterChange)="filter = $event"></drills-filter>
-<button mat-raised-button (click)="generate()">Generate Practice</button>
-<mat-accordion>
-  <div *ngFor="let phase of phases" class="container">
-    <ng-container *ngIf="drillForPhaseInPlan(phase.value); let drill; else noDrill">
-      <button mat-icon-button (click)="refresh(phase.value)" matTooltip="Randomize drill for phase {{phase.value}}">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <drills-preview [drill]="drill"></drills-preview>
-    </ng-container>
-    <ng-template #noDrill>
-      No drill for phase {{phase.value}}
-    </ng-template>
+<form [formGroup]="form">
+  <div>
+    <mat-form-field>
+      <input matInput formControlName="title" placeholder="Name of the plan" />
+    </mat-form-field>
   </div>
+  <div>
+    <mat-form-field>
+      <input matInput formControlName="location" placeholder="Location of the plan" />
+    </mat-form-field>
+    <!-- <mat-datepicker name="date" [] [ngModelOptions]="{standalone: true}">
+  </mat-datepicker> -->
+    <mat-form-field>
+      <input matInput type="time" formControlName="time" placeholder="Time of the plan" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field>
+      <input matInput formControlName="notes" placeholder="Notes on the plan" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field>
+      <mat-select placeholder="Environment" formControlName="environment">
+        <mat-option *ngFor="let environment of environments" [value]="environment">
+          {{ environment }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field>
+      <input matInput formControlName="numPlayers" placeholder="Number of players" />
+    </mat-form-field>
+  </div>
+</form>
+<div>
+  <button class="action" mat-raised-button (click)="generate()" color="accent">Generate Practice</button>
+  <mat-form-field>
+    <mat-select placeholder="Minimum Level" [(ngModel)]="filter.minLevel">
+      <mat-option *ngFor="let level of levels" [value]="level.value">
+        {{ level.viewValue }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select placeholder="Maximum Level" [(ngModel)]="filter.maxLevel">
+      <mat-option *ngFor="let level of levels" [value]="level.value">
+        {{ level.viewValue }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <mat-form-field>
+    <mat-select [(ngModel)]="filter.focus" placeholder="Focus" multiple>
+      <mat-option *ngFor="let focus of focuses" [value]="focus">
+        {{ focus }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+<mat-slide-toggle [(ngModel)]="viewPhases">By Phase</mat-slide-toggle>
+<mat-accordion *ngIf="drillsForPlan(); let drills">
+  <ng-container *ngIf="viewPhases">
+    <ng-container *ngFor="let phase of phases">
+      <h3>
+        Phase {{phase.viewValue}}
+        <button mat-icon-button (click)="addForPhase(phase.value)" [matTooltip]="'Add a new phase ' + phase.viewValue + ' drill'">
+          <mat-icon>add</mat-icon>
+        </button>
+      </h3>
+      <ng-container *ngFor="let drill of drillsForPhaseInPlan(phase.value)">
+        <div class="container">
+          <button mat-icon-button (click)="refresh(drill)" matTooltip="Pick a new random drill">
+            <mat-icon>refresh</mat-icon>
+          </button>
+          <mat-form-field class="duration">
+            <mat-select [(value)]="planDrillWithId(drill.id)!.duration">
+              <mat-option *ngFor="let duration of durations" [value]="duration">
+                {{ duration }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+          <drills-preview [drill]="drill"></drills-preview>
+          <button mat-icon-button (click)="remove(drill.id)" matTooltip="Remove this drill">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+  <ng-container *ngIf="!viewPhases">
+    <ng-container *ngFor="let drill of drills; let idx = index;">
+      <div class="container">
+        <button mat-icon-button (click)="refresh(drill)" matTooltip="Pick a new random drill">
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <mat-form-field class="duration">
+          <mat-select [(value)]="planDrillWithId(drill.id)!.duration">
+            <mat-option *ngFor="let duration of durations" [value]="duration">
+              {{ duration }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <drills-preview [drill]="drill"></drills-preview>
+        <button mat-icon-button (click)="addForIndex(idx)" matTooltip="Add a new drill after this one">
+          <mat-icon>add</mat-icon>
+        </button>
+        <button mat-icon-button (click)="remove(drill.id)" matTooltip="Remove this drill">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
+    </ng-container>
+  </ng-container>
 </mat-accordion>
+<button class="action" mat-raised-button color="primary" (click)="save()" disabled="true">
+  Save
+</button>

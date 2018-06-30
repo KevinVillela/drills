@@ -1,17 +1,20 @@
 <mat-toolbar>
-    <button mat-button routerLink="/" matTooltip="Home">
-      <mat-icon>search</mat-icon>
-      VolleyDrills
-    </button>
-    <button mat-button routerLink="/cadet" matTooltip="Use the Drill Cadet to build your own practice plan!">
-      <mat-icon>build</mat-icon>
-      Drill Cadet™®
-    </button>
-    <button mat-icon-button routerLink="edit" matTooltip="Create a new drill">
-      <mat-icon>add</mat-icon>
-    </button>
-    <a mat-icon-button routerLink="about" matTooltip="Help/About">
-      <mat-icon>help</mat-icon>
-    </a>
-  </mat-toolbar>
+  <button mat-button routerLink="/" matTooltip="Home">
+    <mat-icon>search</mat-icon>
+    VolleyDrills
+  </button>
+  <button mat-button routerLink="/cadet" matTooltip="Use the Drill Cadet to build your own practice plan!">
+    <mat-icon>build</mat-icon>
+    Drill Cadet™®
+  </button>
+  <button class="right" mat-icon-button routerLink="profile" matTooltip="Login/View Profile">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+  <button mat-icon-button routerLink="edit" matTooltip="Create a new drill">
+    <mat-icon>add</mat-icon>
+  </button>
+  <a mat-icon-button routerLink="about" matTooltip="Help/About">
+    <mat-icon>help</mat-icon>
+  </a>
+</mat-toolbar>
 <router-outlet></router-outlet>

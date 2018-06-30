@@ -5,8 +5,8 @@
     </mat-panel-title>
     <mat-panel-description>
       {{drill.minPlayers}} - {{drill.maxPlayers}} players of level {{getLevelLabel(drill)}}
-      <mat-icon [style.color]="'orange'" matTooltip="This drill can be performed on the Beach" *ngIf="drill.environment.includes('Beach')">wb_sunny</mat-icon>
-      <mat-icon [style.color]="'brown'" matTooltip="This drill can be performed on Hard Court" *ngIf="drill.environment.includes('Court')">settings_overscan</mat-icon>
+      <mat-icon [style.color]="'orange'" matTooltip="This drill can be performed on the Beach" *ngIf="drill.environment.includes(Environment.BEACH)">wb_sunny</mat-icon>
+      <mat-icon [style.color]="'brown'" matTooltip="This drill can be performed on Hard Court" *ngIf="drill.environment.includes(Environment.COURT)">settings_overscan</mat-icon>
       <mat-icon class="check" matTooltip="This drill has been verified by our administrators" *ngIf="drill.verified">check</mat-icon>
       <button mat-icon-button class="right" [routerLink]="'/edit/' + drill.id!">
         <mat-icon matTooltip="Edit this drill">edit</mat-icon>

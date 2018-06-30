@@ -35,10 +35,5 @@ export class HomeComponent implements OnInit {
 
   ngOnInit() {
     this.drills.subscribe((drills) => console.log(drills));
-    /* this.drills.subscribe((snapshot) => {
-       snapshot.forEach((drill) => {
-         this.db.doc(`drills/${drill.id}`).update({...drill, environment: [Environment.BEACH]});
-       });
-     }); */
   }
 }

@@ -1,26 +1,28 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
-import { Drill, FOCUSES, ENVIRONMENTS, LEVELS, PHASES } from '../app/model/types';
+import { Component, OnInit, Output, EventEmitter, Input, ChangeDetectionStrategy } from '@angular/core';
+import { Drill, FOCUSES, ENVIRONMENTS, LEVELS, PHASES, Environment } from '../app/model/types';
 
 export type DrillsFilter = Partial<Drill>;
 
 @Component({
   selector: 'drills-filter',
   templateUrl: './filter.component.html',
-  styleUrls: ['./filter.component.css']
+  styleUrls: ['./filter.component.css'],
+  changeDetection : ChangeDetectionStrategy.OnPush,
 })
 export class FilterComponent implements OnInit {
 
   @Output() filterChange = new EventEmitter<DrillsFilter>();
 
+    /** The object to filter by. */
+ @Input() filter: DrillsFilter = {
+    environment: [],
+    focus: [],
+  };
+
   readonly focuses = FOCUSES;
   readonly environments = ENVIRONMENTS;
   readonly levels = LEVELS;
   readonly phases = PHASES;
-    /** The object to filter by. */
-    filter: Partial<Drill> = {
-      environment: [],
-      focus: [],
-    };
 
   constructor() { }
 

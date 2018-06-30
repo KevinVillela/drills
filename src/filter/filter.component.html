@@ -1,6 +1,6 @@
 <div>
   <mat-form-field>
-    <mat-select placeholder="Drill Environment" multiple [(ngModel)]="filter.environment" (ngModelChange)="filterChange.emit(filter)">
+    <mat-select placeholder="Environment" multiple [(ngModel)]="filter.environment" (ngModelChange)="filterChange.emit(filter)">
       <mat-option *ngFor="let environment of environments" [value]="environment">
         {{ environment }}
       </mat-option>
@@ -21,7 +21,7 @@
     </mat-select>
   </mat-form-field>
   <mat-form-field>
-    <mat-select [(ngModel)]="filter.focus" placeholder="Drill Focus" multiple (ngModelChange)="filterChange.emit(filter)">
+    <mat-select [(ngModel)]="filter.focus" placeholder="Focus" multiple (ngModelChange)="filterChange.emit(filter)">
       <mat-option *ngFor="let focus of focuses" [value]="focus">
         {{ focus }}
       </mat-option>

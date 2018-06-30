@@ -6,19 +6,29 @@ import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore
 import {Observable} from 'rxjs/Observable';
 import {take} from 'rxjs/operators';
 
-import {getAnimations, LoadAnimation, NextEntityColor, Rotate, getCurrentAction} from '../model/model';
+import {
+  DeleteAction,
+  getAnimations,
+  getCurrentAction,
+  LoadAnimation,
+  NextEntityColor,
+  Rotate
+} from '../model/model';
 import {
   Animation,
   Drill,
   DrillFocus,
   DrillsState,
+  DURATIONS,
+  EntityAction,
   Environment,
   ENVIRONMENTS,
   FOCUSES,
   LEVELS,
-  PHASES,
-  EntityAction
+  PHASES
 } from '../model/types';
+import { DatabaseService, User } from '../../database.service';
+import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector : 'drills-edit',
@@ -34,36 +44,38 @@ export class EditDrillComponent implements OnInit {
   readonly focuses = FOCUSES;
   readonly environments = ENVIRONMENTS;
 
-  readonly durations = [ 1, 2, 5, 10, 15, 20, 25, 30, 45, 60 ];
+  readonly durations = DURATIONS;
   readonly items: Observable<DrillsState>;
   readonly currentAction: Observable<EntityAction|undefined>;
 
-  currentDrillDoc: AngularFirestoreDocument<DrillsState>;
   drillId: string;
+  creator?: Observable<User|undefined>;
 
-  constructor(private readonly fb: FormBuilder, private readonly db: AngularFirestore,
+  constructor(private readonly fb: FormBuilder, private readonly db: DatabaseService,
               route: ActivatedRoute, private readonly router: Router,
-              private readonly store: Store<{}>) {
+              private readonly store: Store<{}>, private readonly authService: AuthService) {
 
     this.currentAction = store.select((getCurrentAction));
     document.addEventListener('keydown', (event) => {
-
       switch (event.key) {
-        case 'c':
+      case 'c':
         this.store.dispatch(new NextEntityColor());
         break;
-        case 'r':
+      case 'r':
         this.store.dispatch(new Rotate(this.getActionIdOrDie(), 90));
         break;
-        case 'R':
+      case 'R':
         this.store.dispatch(new Rotate(this.getActionIdOrDie(), -90));
         break;
-        case 's':
-          if (event.metaKey) {
-            event.preventDefault();
-            this.save();
-          }
-          break;
+      case 'd':
+        this.store.dispatch(new DeleteAction(this.getActionIdOrDie()));
+        break;
+      case 's':
+        if (event.metaKey) {
+          event.preventDefault();
+          this.save();
+        }
+        break;
       }
     });
     this.form = this.fb.group({
@@ -88,11 +100,11 @@ export class EditDrillComponent implements OnInit {
           actions : [],
         }));
       } else {
-        this.currentDrillDoc = this.db.doc(`drills/${this.drillId}`);
-        this.currentDrillDoc.valueChanges().subscribe((drill) => {
+        this.db.drillForId(this.drillId).subscribe((drill) => {
           if (!drill) {
             return;
           }
+          this.creator = this.db.userForId(drill.creator);
           // drill.animations[0].actions = drill.animations[0].actions.map((action) => {
           //   action.rotation = {type: 'POSITION', degrees: 0};
           //   return action;
@@ -143,6 +155,10 @@ export class EditDrillComponent implements OnInit {
       alert('Please fix form errors before saving.');
       return;
     }
+    if (!this.authService.getUserSync()) {
+      alert('Please log-in using the button in the top-right hand corner to save drills.');
+      return;
+    }
     let currentAnimations: Animation[]|null = null;
     this.store.select(getAnimations)
         .pipe(take(1))
@@ -166,19 +182,18 @@ export class EditDrillComponent implements OnInit {
       animations : currentAnimations,
     };
     if (this.drillId !== undefined) {
-      this.currentDrillDoc.update(drill)
+      this.db.updateDrill(this.drillId, drill)
           .then((id) => { alert('Updated Successfully'); })
           .catch((err) => { alert('Error updating!'); });
     } else {
-      this.db.collection('drills')
-          .add(drill)
+      this.db.addDrill(drill)
           .then((doc) => { this.router.navigateByUrl(`edit/${doc.id}`); })
           .catch((err) => { alert('Error adding'); });
     }
   }
 
   delete() {
-    this.currentDrillDoc.delete()
+    this.db.deleteDrill(this.drillId)
         .then(() => {
           alert('Deleted!');
           this.router.navigateByUrl('/');

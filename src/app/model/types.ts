@@ -133,6 +133,8 @@ export interface Drill {
    * to admins.
    */
   verified?: boolean;
+  /** The User ID for who created this drill. */
+  creator?: string;
 }
 
 export type DrillWithId = DrillsState&{id: string};
@@ -151,6 +153,7 @@ export enum EntityType {
   VOLLEYBALL = 'VOLLEYBALL',
   PLAYER = 'PLAYER',
   CONE = 'CONE',
+  STOOL = 'STOOL',
 }
 
 export const ENTITY_TYPES = [
@@ -159,7 +162,8 @@ export const ENTITY_TYPES = [
   {type: EntityType.PLAYER, icon: 'player_blue'},
   {type: EntityType.PLAYER, icon: 'player_yellow'},
   {type: EntityType.VOLLEYBALL, icon: 'volleyball'},
-  {type: EntityType.CONE, icon: 'cone_orange'}
+  {type: EntityType.CONE, icon: 'cone_orange'},
+  {type: EntityType.STOOL, icon: 'stool'}
 ];
 
 export interface Position {
@@ -189,6 +193,7 @@ export interface Animation {
 }
 
 export const FOCUSES = Object.keys(DrillFocus).filter(key => isNaN(Number(DrillFocus[key])));
+export const DURATIONS = [ 1, 2, 5, 10, 15, 20, 25, 30, 45, 60 ];
 export const ENVIRONMENTS = Object.values(Environment).filter(key => isNaN(Number(Environment[key])));
 export const LEVELS = [
   {viewValue : 'Beginner', value: 1},
