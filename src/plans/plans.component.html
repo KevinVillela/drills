@@ -1,0 +1,2 @@
+<!-- No mat-accordion for now because the nested accordions will not be able to expand.  -->
+<drills-plan *ngFor="let plan of plans | async" [planId]="plan.id"></drills-plan>

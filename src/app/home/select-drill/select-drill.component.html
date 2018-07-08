@@ -1,0 +1,8 @@
+<mat-dialog-content>
+  <drills-home #home [selectable]="true"></drills-home>
+</mat-dialog-content>
+<mat-dialog-actions>
+  <button mat-icon-button [mat-dialog-close]="home.selected">
+    <mat-icon>done</mat-icon>
+  </button>
+</mat-dialog-actions>

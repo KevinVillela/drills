@@ -1,0 +1,30 @@
+<div *ngIf="auth.user | async; then authenticated else guest">
+  <!-- template will replace this div -->
+</div>
+
+
+<!-- User NOT logged in -->
+<ng-template #guest>
+  <h3>Howdy, GUEST</h3>
+  <p>Login to get started...</p>
+
+  <button mat-raised-button (click)="auth.googleLogin()" class="google">
+    <!--   <mat-icon>google</mat-icon>-->Connect Google
+  </button>
+  <button mat-raised-button (click)="auth.facebookLogin()" class="facebook">
+    <!--   <mat-icon>facebook</mat-icon>-->Connect Facebook
+  </button>
+
+</ng-template>
+
+
+<!-- User logged in -->
+<ng-template #authenticated>
+  <div *ngIf="auth.user | async as user">
+    <div>
+      <h3>Howdy, {{ user.displayName }}</h3>
+      <img [src]="user.photoURL">
+    </div>
+    <button mat-raised-button color="accent" (click)="auth.signOut()">Logout</button>
+  </div>
+</ng-template>

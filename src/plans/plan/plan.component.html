@@ -1,0 +1,34 @@
+<mat-expansion-panel [expanded]="startExpanded" *ngIf="drillsForPlan(); let drills" [hideToggle]="true">
+  <mat-expansion-panel-header [collapsedHeight]="'64px'">
+    <div class="header">
+      <div class="title">
+        <h3>{{plan?.title}}</h3>
+        <p>{{plan?.location}} at {{plan?.datetime.toDate() | date:'medium'}}</p>
+      </div>
+      <button class="right" mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item [routerLink]="'/cadet/' + plan?.id">
+          <mat-icon matTooltip="Edit this drill">edit</mat-icon>
+          Edit
+        </button>
+        <button mat-menu-item [routerLink]="'/plans/' + plan?.id">
+          <mat-icon matTooltip="View this drill">visibility</mat-icon>
+          View
+        </button>
+      </mat-menu>
+    </div>
+  </mat-expansion-panel-header>
+  <ng-template matExpansionPanelContent>
+    <p>
+    {{ plan?.notes }}
+  </p>
+    <div *ngFor="let drill of drills; let idx = index;" class="drill">
+      <div class="container">
+        {{ drill.duration }} <br> min
+      </div>
+      <drills-preview [drill]="drill"></drills-preview>
+    </div>
+  </ng-template>
+</mat-expansion-panel>

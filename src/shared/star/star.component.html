@@ -1,0 +1,16 @@
+<button mat-icon-button
+        *ngIf="!(starred | async)"
+        matTooltip="Add to favorites"
+        (click)="toggleStar(); $event.stopPropagation()">
+  <mat-icon class="unstarred">
+    bookmark_border
+  </mat-icon>
+</button>
+<button mat-icon-button
+        *ngIf="starred | async"
+        matTooltip="Remove from favorites"
+        (click)="toggleStar(); $event.stopPropagation()">
+  <mat-icon class="starred">
+    bookmark
+  </mat-icon>
+</button>

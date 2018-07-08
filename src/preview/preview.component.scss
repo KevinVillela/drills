@@ -1,0 +1,79 @@
+mat-panel-description {
+  justify-content: center;
+  align-items: center;
+}
+
+mat-expansion-panel-header {
+  padding-right: 0;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  width: 100%;
+
+  .title {
+    p {
+      opacity: 0.54;
+    }
+
+    p,
+    h3 {
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .buttons {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    height: 64px;
+    margin-left: auto;
+    justify-content: center;
+
+    .top {
+      display: flex;
+      align-items: center;
+      min-height: 24px;
+    }
+
+    .bottom {
+      align-items: center;
+      display: flex;
+      height: 24px;
+
+      .star-rating {
+        opacity: 0.74;
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+.right {
+  margin-left: 24px;
+}
+
+.check {
+  color: green;
+}
+
+.content {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+drills-court {
+  border: darkblue 2px solid;
+  margin: 4px;
+  padding: 4px;
+}
+
+.no-animation {
+  font-size: 15px;
+  font-style: italic;
+  opacity: 0.74;
+}
