@@ -13,15 +13,26 @@ import {
 import {BrowserModule} from '@angular/platform-browser';
 import {RouterModule} from '@angular/router';
 
+import {StarModule} from '../../shared/star/star.module';
 import {AnimatorModule} from '../animator/animator.module';
 
 import {EditDrillComponent} from './edit.component';
 
 @NgModule({
   imports : [
-    CommonModule, ReactiveFormsModule, MatInputModule, BrowserModule, MatSelectModule,
-    MatSliderModule, AnimatorModule, MatButtonModule, MatIconModule, RouterModule,
-    MatSlideToggleModule, MatTooltipModule
+    CommonModule,
+    ReactiveFormsModule,
+    MatInputModule,
+    BrowserModule,
+    MatSelectModule,
+    MatSliderModule,
+    AnimatorModule,
+    MatButtonModule,
+    MatIconModule,
+    RouterModule,
+    MatSlideToggleModule,
+    MatTooltipModule,
+    StarModule,
   ],
   declarations : [ EditDrillComponent ],
   exports : [ EditDrillComponent ]

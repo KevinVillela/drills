@@ -197,10 +197,10 @@ export const DURATIONS = [ 1, 2, 5, 10, 15, 20, 25, 30, 45, 60 ];
 export const ENVIRONMENTS = Object.values(Environment).filter(key => isNaN(Number(Environment[key])));
 export const LEVELS = [
   {viewValue : 'Beginner', value: 1},
-  {viewValue : 'Intermediate', value: 2},
-  {viewValue : 'Advanced', value: 3},
+  {viewValue : 'Intermediate', value: 2, shortViewValue: 'Interm.'},
+  {viewValue : 'Advanced', value: 3, shortViewValue: 'Adv.'},
   {viewValue : 'Expert', value: 4},
-  {viewValue : 'Professional', value: 5},
+  {viewValue : 'Professional', value: 5, shortViewValue: 'Pro'},
 ];
 export const PHASES = [
   {viewValue : 'Phase I', value: 1},

@@ -2,6 +2,7 @@
   <h4 *ngIf="creator | async; let creatorSync">
     Created By: {{creatorSync.displayName}}
   </h4>
+  <drills-star [id]="drillId"></drills-star>
   <div>
     <mat-form-field>
       <input matInput formControlName="name" placeholder="Name of the Drill" />

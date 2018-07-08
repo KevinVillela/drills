@@ -1,4 +1,5 @@
 import {Component, HostListener, ViewChild} from '@angular/core';
+import { AuthService } from '../core/auth/auth.service';
 
 
 
@@ -8,5 +9,7 @@ import {Component, HostListener, ViewChild} from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+
+  constructor(readonly authService: AuthService) {}
 
 }

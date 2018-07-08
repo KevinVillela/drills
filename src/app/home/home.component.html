@@ -1,6 +1,28 @@
 <div>
   <drills-filter (filterChange)="filter = $event"></drills-filter>
 </div>
+<div class="header">
+  <input matInput placeholder="Title filter" [(ngModel)]="filter.name" />
+  <button class="star" mat-icon-button matTooltip="Filter by if you have starred the drill" (click)="toggleStar()">
+    <mat-icon [style.color]="getStarColor()">
+      {{getStarIcon()}}
+    </mat-icon>
+  </button>
+  <button class="beach" mat-icon-button>
+    <mat-icon matTooltip="Filter by if the drill can be played on the beach" [style.color]="getBeachColor()" (click)="toggleEnv(Environment.BEACH)">wb_sunny</mat-icon>
+  </button>
+  <button class="court" mat-icon-button>
+    <mat-icon matTooltip="Filter by if the drill can be played on hardcourt" [style.color]="getCourtColor()" (click)="toggleEnv(Environment.COURT)">settings_overscan</mat-icon>
+  </button>
+  <button class="check" mat-icon-button>
+    <mat-icon matTooltip="Filter by if the drill has been verified or not" [style.color]="getVerifiedColor()" (click)="toggleVerified()">check</mat-icon>
+  </button>
+</div>
 <mat-accordion>
-  <drills-preview *ngFor="let drill of drills | async | search:filter" [drill]="drill"></drills-preview>
+  <div *ngFor="let drill of drills | async | search:filter" class="drill">
+    <ng-container *ngIf="selectable">
+      <mat-checkbox (change)="selected.set(drill.id, $event.checked)"></mat-checkbox>
+    </ng-container>
+    <drills-preview [drill]="drill"></drills-preview>
+  </div>
 </mat-accordion>

@@ -1,7 +1,9 @@
 import { Component, OnInit, Output, EventEmitter, Input, ChangeDetectionStrategy } from '@angular/core';
 import { Drill, FOCUSES, ENVIRONMENTS, LEVELS, PHASES, Environment } from '../app/model/types';
 
-export type DrillsFilter = Partial<Drill>;
+export interface DrillsFilter extends Partial<Drill> {
+  starred?: boolean;
+}
 
 @Component({
   selector: 'drills-filter',

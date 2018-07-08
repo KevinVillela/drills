@@ -1,12 +1,5 @@
 <div>
   <mat-form-field>
-    <mat-select placeholder="Environment" multiple [(ngModel)]="filter.environment" (ngModelChange)="filterChange.emit(filter)">
-      <mat-option *ngFor="let environment of environments" [value]="environment">
-        {{ environment }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-  <mat-form-field>
     <mat-select placeholder="Minimum Level" [(ngModel)]="filter.minLevel" (ngModelChange)="filterChange.emit(filter)">
       <mat-option *ngFor="let level of levels" [value]="level.value">
         {{ level.viewValue }}

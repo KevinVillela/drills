@@ -1,22 +1,50 @@
-<mat-expansion-panel (opened)="drillOpened(drill)">
-  <mat-expansion-panel-header>
-    <mat-panel-title>
-      <h3>{{drill.name}}</h3>
-    </mat-panel-title>
-    <mat-panel-description>
-      {{drill.minPlayers}} - {{drill.maxPlayers}} players of level {{getLevelLabel(drill)}}
-      <mat-icon [style.color]="'orange'" matTooltip="This drill can be performed on the Beach" *ngIf="drill.environment.includes(Environment.BEACH)">wb_sunny</mat-icon>
-      <mat-icon [style.color]="'brown'" matTooltip="This drill can be performed on Hard Court" *ngIf="drill.environment.includes(Environment.COURT)">settings_overscan</mat-icon>
-      <mat-icon class="check" matTooltip="This drill has been verified by our administrators" *ngIf="drill.verified">check</mat-icon>
-      <button mat-icon-button class="right" [routerLink]="'/edit/' + drill.id!">
-        <mat-icon matTooltip="Edit this drill">edit</mat-icon>
+<mat-expansion-panel (opened)="drillOpened(drill)" [hideToggle]="true" [expanded]="startExpanded">
+  <mat-expansion-panel-header [collapsedHeight]="'64px'">
+    <div class="header">
+      <div class="title">
+        <h3>
+          {{drill.name}}
+        </h3>
+        <p>{{drill.minPlayers}} - {{drill.maxPlayers}}, {{getLevelLabel(drill)}}</p>
+      </div>
+      <div class="buttons">
+        <div class="top">
+          <drills-star [id]="drill.id"></drills-star>
+          <mat-icon [style.color]="'orange'" matTooltip="This drill can be performed on the Beach" [style.opacity]="drill.environment.includes(Environment.BEACH) ? 1 : 0">wb_sunny</mat-icon>
+          <mat-icon [style.color]="'brown'" matTooltip="This drill can be performed on Hard Court" [style.opacity]="drill.environment.includes(Environment.COURT) ? 1 : 0">settings_overscan</mat-icon>
+          <mat-icon class="check" matTooltip="This drill has been verified by our administrators" [style.opacity]="drill.verified ? 1 : 0">check</mat-icon>
+        </div>
+        <div class="bottom">
+          <star-rating [rating]="2.63" [size]="'small'"></star-rating>
+          <span class="star-rating">(102)</span>
+        </div>
+      </div>
+      <button class="right" mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
+        <mat-icon>more_vert</mat-icon>
       </button>
-    </mat-panel-description>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item [routerLink]="'/edit/' + drill.id!">
+          <mat-icon matTooltip="Edit this drill">edit</mat-icon>
+          Edit
+        </button>
+        <button mat-menu-item [routerLink]="'/drills/' + drill.id!">
+          <mat-icon matTooltip="View this drill">visibility</mat-icon>
+          View
+        </button>
+      </mat-menu>
+    </div>
   </mat-expansion-panel-header>
   <ng-template matExpansionPanelContent>
     <div class="content">
       <span>{{drill.description}}</span>
-      <drills-court [drillId]="drill.id"></drills-court>
+      <ng-container *ngIf="(max | async) > 0; else noAnimation">
+        <drills-court [drillId]="drill.id"></drills-court>
+      </ng-container>
+      <ng-template #noAnimation>
+        <p class="no-animation">This drill does not have an animation because {{drill.verified ? 'we feel like the description is adequate.' : 'it
+          has not been added yet.'}}
+        </p>
+      </ng-template>
     </div>
   </ng-template>
 </mat-expansion-panel>

@@ -1,13 +1,29 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import {AbstractControl, FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {MatDialog, MatDialogRef} from '@angular/material';
 import {ActivatedRoute, Params, Router} from '@angular/router';
+// import { Timestamp } from '@firebase/firestore-types';
+import {Timestamp} from '@firebase/firestore-types';
+import {map, switchMap, mergeMap} from 'rxjs/operators';
 
-import {Drill, DrillWithId, DURATIONS, Environment, PHASES, ENVIRONMENTS, LEVELS, FOCUSES} from '../app/model/types';
+import {HomeComponent} from '../app/home/home.component';
+import {SelectDrillComponent} from '../app/home/select-drill/select-drill.component';
+import {
+  Drill,
+  DrillWithId,
+  DURATIONS,
+  Environment,
+  ENVIRONMENTS,
+  FOCUSES,
+  LEVELS,
+  PHASES
+} from '../app/model/types';
+import {AuthService} from '../core/auth/auth.service';
 import {DatabaseService, Plan, PlanDrill} from '../database.service';
 import {DrillsFilter} from '../filter/filter.component';
 import {searchFilter} from '../filter/filter.pipe';
-// import { Timestamp } from '@firebase/firestore-types';
-import { Timestamp } from '@firebase/firestore-types';
-import { FormGroup, Validators, FormBuilder, AbstractControl } from '@angular/forms';
+import {PlansService} from '../plans/plans.service';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector : 'drills-cadet',
@@ -25,8 +41,14 @@ export class CadetComponent implements OnInit {
 
   readonly form: FormGroup;
 
-  plan: Plan =
-      {environment : Environment.BEACH, drills: [], numPlayers: 1, title: 'Untitled', location: '', datetime: undefined};
+  plan: Plan = {
+    environment : Environment.BEACH,
+    drills: [],
+    numPlayers: 1,
+    title: 'Untitled',
+    location: '',
+    datetime: undefined
+  };
   planId?: string;
   readonly phases = PHASES;
   readonly durations = DURATIONS;
@@ -35,10 +57,26 @@ export class CadetComponent implements OnInit {
   readonly focuses = FOCUSES;
 
   viewPhases = false;
-  constructor(private readonly fb: FormBuilder, private readonly databaseService: DatabaseService, private readonly router: Router,
-              route: ActivatedRoute, cd: ChangeDetectorRef) {
+  selectDialog?: MatDialogRef<SelectDrillComponent>;
+
+  constructor(private readonly fb: FormBuilder, private readonly databaseService: DatabaseService,
+              private readonly router: Router, private readonly route: ActivatedRoute,
+              private readonly cd: ChangeDetectorRef, private readonly authService: AuthService,
+              private readonly plansService: PlansService, private readonly dialog: MatDialog) {
+    this.form = this.fb.group({
+      title : [ '', Validators.required ],
+      location : [ '', Validators.required ],
+      time : [ '', Validators.required ],
+      notes : [ '' ],
+      environment : [ Environment.BEACH, Validators.required ],
+      numPlayers : [ 4, Validators.required ],
+      date : [ '', Validators.required ],
+    });
     databaseService.drills.subscribe((drills) => { this.drills = drills; });
-    route.params.subscribe((params: Params) => {
+  }
+
+  ngOnInit() {
+    this.route.params.subscribe((params: Params) => {
       this.planId = params['id'];
       if (this.planId != null) {
         this.databaseService.loadPlan(this.planId).subscribe((plan) => {
@@ -54,27 +92,18 @@ export class CadetComponent implements OnInit {
             this.getForm('location').setValue(plan.location);
             this.getForm('notes').setValue(plan.notes);
             if (plan.datetime) {
-              this.getForm('time').setValue(plan.datetime.toDate());
+              const date = plan.datetime.toDate();
+              this.getForm('date').setValue(date);
+              this.getForm('time').setValue(`${date.toLocaleTimeString('en-GB')}`);
             }
             this.getForm('environment').setValue(plan.environment);
             this.getForm('numPlayers').setValue(plan.numPlayers);
-            cd.markForCheck();
+            this.cd.markForCheck();
           }
         });
       }
     });
-    this.form = this.fb.group({
-      title : [ '', Validators.required ],
-      location: [ '', Validators.required ],
-      time: ['', Validators.required],
-      notes: [''],
-      environment: [Environment.BEACH, Validators.required],
-      numPlayers: [4, Validators.required],
-      // date: ['', Validators.required],
-    });
   }
-
-  ngOnInit() {}
 
   private getForm(name: string): AbstractControl {
     const form = this.form.get(name);
@@ -97,8 +126,6 @@ export class CadetComponent implements OnInit {
     }
   }
 
-  drillForId(id: string) { return this.drills.find((drill) => drill.id === id); }
-
   drillWithId(id: string): DrillWithId|undefined {
     return this.drills.find((drill) => drill.id === id);
   }
@@ -107,14 +134,8 @@ export class CadetComponent implements OnInit {
     return this.plan.drills.find((planDrill) => planDrill.drillId === id);
   }
 
-  drillsForPlan() {
-    const drills = this.plan.drills.map((drill) => {
-      const res = this.drillForId(drill.drillId);
-      if (!res) {
-        throw new Error(`Couldn't find drill for ID ${drill.drillId}`);
-      }
-      return res;
-    });
+  drillsForPlan(): DrillWithId[] {
+    const drills = this.plansService.drillsForPlan(this.plan);
     if (this.viewPhases) {
       return drills.sort((a, b) => a.phase - b.phase);
     }
@@ -122,12 +143,21 @@ export class CadetComponent implements OnInit {
   }
 
   private drillForPhase(phase: number): DrillWithId {
-    const phaseDrills =
-        searchFilter(this.drills, this.filter).filter((drill) => drill.phase === phase);
+    const phaseDrills = searchFilter(this.authService, this.drills, this.filter)
+                            .filter((drill) => drill.phase === phase);
     return phaseDrills[Math.floor(Math.random() * phaseDrills.length)];
   }
 
   save() {
+    this.plan.title = this.getForm('title').value;
+    this.plan.location = this.getForm('location').value;
+    this.plan.notes = this.getForm('notes').value;
+    this.plan.environment = this.getForm('environment').value;
+    this.plan.numPlayers = this.getForm('numPlayers').value;
+    const date = this.getForm('date').value;
+    const time = this.getForm('time').value;
+    date.setHours(time.split(':')[0], time.split(':')[1]);
+    this.plan.datetime = date;
     this.databaseService.upsertPlan(this.plan, this.planId).then((id) => {
       if (!this.planId) {
         this.planId = id;
@@ -147,6 +177,43 @@ export class CadetComponent implements OnInit {
     this.plan.drills.splice(index + 1, 0, drill);
   }
 
+  private getDrills(): Observable<PlanDrill[]> {
+    this.selectDialog = this.dialog.open(SelectDrillComponent);
+    return this.selectDialog.afterClosed().pipe(map((selected: Map<string, boolean>) => {
+      const ret: PlanDrill[] = [];
+      if (!selected) {
+        return ret;
+      }
+      selected.forEach((isSelected, drillId) => {
+        if (isSelected) {
+          ret.push({
+            drillId,
+            duration : 10,
+          });
+        }
+      });
+      return ret;
+    }));
+  }
+
+  editForIndex(index: number) {
+    this.getDrills().subscribe((selected) => {
+      selected.forEach((planDrill) => {
+        this.plan.drills.splice(index, 1, planDrill);
+      });
+      this.cd.markForCheck();
+    });
+   }
+
+  addWithSelection() {
+    this.getDrills().subscribe((selected) => {
+      selected.forEach((planDrill) => {
+          this.plan.drills.push(planDrill);
+      });
+      this.cd.markForCheck();
+    });
+  }
+
   remove(drillId: string) {
     this.plan.drills = this.plan.drills.filter((drill) => drill.drillId !== drillId);
   }
@@ -157,7 +224,7 @@ export class CadetComponent implements OnInit {
     }
     const drills: Drill[] = [];
     for (const planDrill of this.plan.drills) {
-      const drill = this.drillForId(planDrill.drillId);
+      const drill = this.plansService.drillForId(planDrill.drillId);
       if (drill && drill.phase === phase) {
         drills.push(drill);
       }
@@ -166,14 +233,15 @@ export class CadetComponent implements OnInit {
   }
 
   private randomDrill(phase: number): PlanDrill {
-    const filteredDrills = searchFilter(this.drills, this.filter).filter((drill) => {
-      if (!this.viewPhases) {
-        return true;
-      }
-      return drill.phase === phase;
-    });
+    const filteredDrills =
+        searchFilter(this.authService, this.drills, this.filter).filter((drill) => {
+          if (!this.viewPhases) {
+            return true;
+          }
+          return drill.phase === phase;
+        });
     const newDrill = filteredDrills[Math.floor(Math.random() * filteredDrills.length)];
-    return {drillId: newDrill.id, duration: newDrill.duration};
+    return {drillId : newDrill.id, duration : newDrill.duration};
   }
 
   refresh(oldDrill: DrillWithId) {

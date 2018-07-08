@@ -20,6 +20,7 @@ import {FilterModule} from '../filter/filter.module';
 import {PreviewModule} from '../preview/preview.module';
 
 import {CadetComponent} from './cadet.component';
+import { HomeModule } from '../app/home/home.module';
 
 @Pipe({
   name : 'orderByPhase',
@@ -39,9 +40,22 @@ export class SortByPhasePope implements PipeTransform {
 
 @NgModule({
   imports : [
-    CommonModule, FilterModule, MatButtonModule, DatabaseModule, MatExpansionModule, PreviewModule,
-    MatIconModule, MatTooltipModule, MatSelectModule, FormsModule, MatInputModule,
-    ReactiveFormsModule, MatDatepickerModule, MatNativeDateModule, MatSlideToggleModule
+    CommonModule,
+    FilterModule,
+    MatButtonModule,
+    DatabaseModule,
+    MatExpansionModule,
+    PreviewModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatSelectModule,
+    FormsModule,
+    MatInputModule,
+    ReactiveFormsModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatSlideToggleModule,
+    HomeModule,
   ],
   declarations : [ CadetComponent, SortByPhasePope ]
 })

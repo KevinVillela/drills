@@ -9,7 +9,11 @@ import {
   MatSelect,
   MatSelectModule,
   MatToolbarModule,
-  MatTooltipModule
+  MatTooltipModule,
+  MatListModule,
+  MatCheckbox,
+  MatCheckboxModule,
+  MatDialogModule
 } from '@angular/material';
 import {RouterModule} from '@angular/router';
 import {AngularFireModule} from 'angularfire2';
@@ -18,6 +22,7 @@ import {HomeComponent} from './home.component';
 import { CourtModule } from '../court/court.module';
 import { FilterModule } from '../../filter/filter.module';
 import { PreviewModule } from '../../preview/preview.module';
+import { SelectDrillComponent } from './select-drill/select-drill.component';
 
 @NgModule({
   imports : [
@@ -34,10 +39,13 @@ import { PreviewModule } from '../../preview/preview.module';
     MatExpansionModule,
     CourtModule,
     FilterModule,
-    PreviewModule
+    PreviewModule,
+    MatCheckboxModule,
+    MatDialogModule
   ],
-  declarations : [ HomeComponent ],
-  exports : [ HomeComponent ],
+  declarations : [ HomeComponent, SelectDrillComponent ],
+  exports : [ HomeComponent, SelectDrillComponent ],
+  entryComponents: [SelectDrillComponent]
 })
 export class HomeModule {
 }

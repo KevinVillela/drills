@@ -8,8 +8,11 @@
     <mat-form-field>
       <input matInput formControlName="location" placeholder="Location of the plan" />
     </mat-form-field>
-    <!-- <mat-datepicker name="date" [] [ngModelOptions]="{standalone: true}">
-  </mat-datepicker> -->
+    <mat-form-field>
+      <input matInput [matDatepicker]="picker" placeholder="Date of the plan" formControlName="date">
+      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
     <mat-form-field>
       <input matInput type="time" formControlName="time" placeholder="Time of the plan" />
     </mat-form-field>
@@ -56,7 +59,10 @@
     </mat-select>
   </mat-form-field>
 </div>
-<mat-slide-toggle [(ngModel)]="viewPhases">By Phase</mat-slide-toggle>
+<mat-slide-toggle *ngIf="plan.drills.length" [(ngModel)]="viewPhases">By Phase</mat-slide-toggle>
+<button mat-icon-button (click)="addWithSelection()" matTooltip="Add the first drill">
+  <mat-icon>add</mat-icon>
+</button>
 <mat-accordion *ngIf="drillsForPlan(); let drills">
   <ng-container *ngIf="viewPhases">
     <ng-container *ngFor="let phase of phases">
@@ -100,6 +106,9 @@
           </mat-select>
         </mat-form-field>
         <drills-preview [drill]="drill"></drills-preview>
+        <button mat-icon-button (click)="editForIndex(idx)" matTooltip="Edit this drill">
+            <mat-icon>edit</mat-icon>
+          </button>
         <button mat-icon-button (click)="addForIndex(idx)" matTooltip="Add a new drill after this one">
           <mat-icon>add</mat-icon>
         </button>
@@ -110,6 +119,6 @@
     </ng-container>
   </ng-container>
 </mat-accordion>
-<button class="action" mat-raised-button color="primary" (click)="save()" disabled="true">
+<button class="action" mat-raised-button color="primary" (click)="save()">
   Save
 </button>

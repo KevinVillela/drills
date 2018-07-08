@@ -1,20 +1,40 @@
 <mat-toolbar>
   <button mat-button routerLink="/" matTooltip="Home">
-    <mat-icon>search</mat-icon>
+    <mat-icon class="material-icons" svgIcon="drill"></mat-icon>
     VolleyDrills
   </button>
-  <button mat-button routerLink="/cadet" matTooltip="Use the Drill Cadet to build your own practice plan!">
-    <mat-icon>build</mat-icon>
-    Drill Cadet™®
+  <button mat-button routerLink="/plans" matTooltip="View your practice plans">
+    <mat-icon class="material-icons">assignment</mat-icon>
+    Plans
   </button>
-  <button class="right" mat-icon-button routerLink="profile" matTooltip="Login/View Profile">
-    <mat-icon>account_circle</mat-icon>
-  </button>
-  <button mat-icon-button routerLink="edit" matTooltip="Create a new drill">
-    <mat-icon>add</mat-icon>
-  </button>
-  <a mat-icon-button routerLink="about" matTooltip="Help/About">
-    <mat-icon>help</mat-icon>
-  </a>
+  <div class="right">
+    <button mat-icon-button routerLink="profile" matTooltip="Login" *ngIf="!(authService.user | async)">
+      <mat-icon>account_circle</mat-icon>
+    </button>
+    <ng-container *ngIf="authService.user | async; let user">
+      <a class="image" *ngIf="user.photoURL" routerLink="profile" matTooltip="View Profile">
+        <span [style.background-image]="'url(' + user.photoURL + ')'"></span>
+      </a>
+      <button *ngIf="!user.photoURL" mat-icon-button routerLink="profile" matTooltip="View Profile">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+    </ng-container>
+    <button mat-icon-button matTooltip="New..." [matMenuTriggerFor]="addMenu">
+      <mat-icon>add</mat-icon>
+    </button>
+    <mat-menu #addMenu [overlapTrigger]="false">
+        <button mat-menu-item>
+            <mat-icon class="material-icons" svgIcon="drill"></mat-icon>
+          <span>New Drill</span>
+        </button>
+        <button mat-menu-item>
+            <mat-icon class="material-icons">assignment</mat-icon>
+          <span>New Plan</span>
+        </button>
+      </mat-menu>
+    <a mat-icon-button routerLink="about" matTooltip="Help/About">
+      <mat-icon>help</mat-icon>
+    </a>
+  </div>
 </mat-toolbar>
-<router-outlet></router-outlet>
+ <router-outlet></router-outlet>

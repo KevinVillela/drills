@@ -1,3 +1,17 @@
 .right {
+  align-items: center;
+  display: flex;
   margin-left: auto;
+}
+
+.image {
+  margin-right: 8px;
+}
+
+.image span {
+  background-size: 32px;
+  border-radius: 50%;
+  height: 32px;
+  width: 32px;
+  display: block;
 }

@@ -3,6 +3,7 @@ import {FormsModule} from '@angular/forms';
 import {
   MatButtonModule,
   MatIconRegistry,
+  MatMenuModule,
   MatToolbarModule,
   MatTooltipModule
 } from '@angular/material';
@@ -13,6 +14,7 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {RouterModule, Routes} from '@angular/router';
 import {StoreModule} from '@ngrx/store';
 import {StoreDevtoolsModule} from '@ngrx/store-devtools';
+import {StarRatingModule} from 'angular-star-rating';
 import {AngularFireModule} from 'angularfire2';
 import {AngularFirestoreModule} from 'angularfire2/firestore';
 
@@ -20,6 +22,12 @@ import {CadetComponent} from '../cadet/cadet.component';
 import {CadetModule} from '../cadet/cadet.module';
 import {AuthGuard} from '../core/auth/auth.guard';
 import {environment} from '../environments/environment.prod';
+import {PlanComponent} from '../plans/plan/plan.component';
+import {ViewPlanComponent} from '../plans/plan/view-plan.component';
+import {PlansComponent} from '../plans/plans.component';
+import {PlansModule} from '../plans/plans.module';
+import {PreviewComponent} from '../preview/preview.component';
+import {ViewDrillComponent} from '../preview/view.component';
 import {UserProfileComponent} from '../user-profile/user-profile.component';
 import {UserProfileModule} from '../user-profile/user-profile.module';
 
@@ -46,6 +54,14 @@ const ROUTES: Routes = [
   {path : 'cadet/:id', component : CadetComponent, pathMatch : 'full'},
   {path : 'about', component : AboutComponent, pathMatch : 'full'},
   {path : 'profile', component : UserProfileComponent, pathMatch : 'full'},
+  {path : 'drills/:id', component : ViewDrillComponent, pathMatch : 'full'},
+  {path : 'plans', component : PlansComponent, pathMatch : 'full'},
+  {
+    path : 'plans/:id',
+    component : ViewPlanComponent,
+    pathMatch : 'full',
+    data : {startExpanded : true}
+  },
 ];
 
 @NgModule({
@@ -73,6 +89,9 @@ const ROUTES: Routes = [
     MatTooltipModule,
     CadetModule,
     UserProfileModule,
+    StarRatingModule.forRoot(),
+    PlansModule,
+    MatMenuModule
   ],
   providers : [],
   bootstrap : [ AppComponent ]
@@ -88,5 +107,7 @@ export class AppModule {
 
     iconRegistry.addSvgIcon('cheetah',
                             sanitizer.bypassSecurityTrustResourceUrl(`assets/cheetah.svg`));
+    iconRegistry.addSvgIcon('drill',
+                            sanitizer.bypassSecurityTrustResourceUrl(`assets/whistle.svg`));
   }
 }
