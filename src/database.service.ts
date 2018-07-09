@@ -23,10 +23,17 @@ export interface PlanDrill {
   duration: number;
 }
 
+export interface UserPlan {
+  uid?: string;
+  displayName?: string;
+  photoUrl?: string;
+}
+
 export interface Plan {
   drills: PlanDrill[];
   environment: Environment;
   numPlayers: number;
+  players?: { [ userPlanId: string]: UserPlan};
   title: string;
   location: string;
   datetime?: Timestamp;
@@ -39,6 +46,7 @@ export interface PlanWithId extends Plan {
 
 @Injectable({providedIn : 'root'})
 export class DatabaseService {
+  readonly users: Observable<User[]>;
   readonly drills: Observable<DrillWithId[]>;
   readonly plansCollection: AngularFirestoreCollection<Plan>;
   readonly drillsCollection: AngularFirestoreCollection<DrillWithId>;
@@ -57,14 +65,19 @@ export class DatabaseService {
       shareReplay(1),
     );
     this.drills = this.drillsCollection.snapshotChanges().pipe(
+      map((snapshot) =>
+              snapshot.map((snap) => ({...snap.payload.doc.data(), id : snap.payload.doc.id}))
+                  .sort((snap1, snap2) => snap1.name.localeCompare(snap2.name))),
+      shareReplay(1));
+    this.users = db.collection<User>('users').snapshotChanges().pipe(
         map((snapshot) =>
                 snapshot.map((snap) => ({...snap.payload.doc.data(), id : snap.payload.doc.id}))
-                    .sort((snap1, snap2) => snap1.name.localeCompare(snap2.name))),
+                    .sort((snap1, snap2) => snap1.email.localeCompare(snap2.email))),
         shareReplay(1));
     this.authService.user.subscribe((user) => { this.user = user; });
   }
 
-  private userDocForId(userId: string) {
+  userDocForId(userId: string) {
     return this.db.doc<User>(`users/${userId}`);
   }
 
@@ -120,14 +133,6 @@ export class DatabaseService {
     }
     currentUser.update({favoriteDrills: currentFavorites});
    }
-
-  upsertPlan(plan: Plan, planId?: string): Promise<string> {
-    if (planId) {
-      return this.plansCollection.doc(planId).update(plan).then(() => planId);
-    } else {
-      return this.plansCollection.add(plan as PlanWithId).then((reference) => reference.id);
-    }
-  }
 
   loadPlan(planId: string) {
     return this.plansSnapshot.pipe(

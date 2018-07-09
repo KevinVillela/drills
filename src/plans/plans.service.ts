@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { DrillWithId } from '../app/model/types';
-import { Plan, DatabaseService, PlanWithId } from '../database.service';
+import { Plan, DatabaseService, PlanWithId, UserPlan } from '../database.service';
 import { Observable } from 'rxjs/Observable';
-import { AngularFirestoreCollection } from 'angularfire2/firestore';
+import { AngularFirestoreCollection, AngularFirestore } from 'angularfire2/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +11,8 @@ export class PlansService {
   drills: DrillWithId[];
   plans: Observable<PlanWithId[]>;
 
-  constructor(private readonly databaseService: DatabaseService) {
+  constructor(private readonly databaseService: DatabaseService,
+  private readonly afs: AngularFirestore) {
     databaseService.drills.subscribe((drills) => { this.drills = drills; });
     this.plans = this.databaseService.plansSnapshot;
   }
@@ -31,5 +32,23 @@ export class PlansService {
 
   planForId(id: string): Observable<PlanWithId|undefined> {
     return this.databaseService.loadPlan(id);
+  }
+
+  getUsersPlans(userId: string): Observable<UserPlan[]> {
+    const plansRef = this.afs.collection<UserPlan>('planUsers', (ref) => ref.where('userId', '==', userId));
+    return plansRef.valueChanges();
+  }
+
+  getPlansUsers(planId: string): Observable<UserPlan[]> {
+    const users = this.afs.collection<UserPlan>('planUsers', (ref) => ref.where('planId', '==', planId));
+    return users.valueChanges();
+  }
+
+  upsertPlan(plan: Plan, planId?: string): Promise<string> {
+    if (planId) {
+      return this.databaseService.plansCollection.doc(planId).update(plan).then(() => planId);
+    } else {
+      return this.databaseService.plansCollection.add(plan as PlanWithId).then((reference) => reference.id);
+    }
   }
 }

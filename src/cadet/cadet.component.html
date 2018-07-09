@@ -59,6 +59,7 @@
     </mat-select>
   </mat-form-field>
 </div>
+<drills-user-picker [selectedUsers]="plansUsers"></drills-user-picker>
 <mat-slide-toggle *ngIf="plan.drills.length" [(ngModel)]="viewPhases">By Phase</mat-slide-toggle>
 <button mat-icon-button (click)="addWithSelection()" matTooltip="Add the first drill">
   <mat-icon>add</mat-icon>

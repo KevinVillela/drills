@@ -11,11 +11,11 @@ import { User } from '../../database.service';
 @Injectable()
 export class AuthService {
 
+  allUsers: Observable<User[]>;
   user: Observable<User|null|undefined>;
 
   constructor(private afAuth: AngularFireAuth, private afs: AngularFirestore,
               private router: Router) {
-
     // Get auth data, then get firestore user document || null
     this.user = this.afAuth.authState.pipe(switchMap(user => {
       if (user) {

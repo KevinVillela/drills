@@ -1,15 +1,17 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { Drill, LEVELS, DrillWithId, Environment } from '../app/model/types';
-import { Store } from '@ngrx/store';
-import { LoadAnimation, maxAnimationLength } from '../app/model/model';
-import { Observable } from 'rxjs/Observable';
-import { AngularFirestore } from 'angularfire2/firestore';
-import { map } from 'rxjs/operators';
+import {Component, Input, OnInit} from '@angular/core';
+import {Store} from '@ngrx/store';
+import {AngularFirestore} from 'angularfire2/firestore';
+import {Observable} from 'rxjs/Observable';
+import {map} from 'rxjs/operators';
+
+import {LoadAnimation, maxAnimationLength} from '../app/model/model';
+import {Drill, DrillWithId, Environment, LEVELS} from '../app/model/types';
+import {DatabaseService} from '../database.service';
 
 @Component({
-  selector: 'drills-preview',
-  templateUrl: './preview.component.html',
-  styleUrls: ['./preview.component.scss']
+  selector : 'drills-preview',
+  templateUrl : './preview.component.html',
+  styleUrls : [ './preview.component.scss' ]
 })
 export class PreviewComponent implements OnInit {
   readonly levels = LEVELS;
@@ -20,13 +22,9 @@ export class PreviewComponent implements OnInit {
 
   max: Observable<number>;
 
-  constructor(private readonly store: Store<{}>) {
-  }
+  constructor(private readonly store: Store<{}>, private readonly db: DatabaseService) {}
 
-  ngOnInit() {
-    this.max = this.store.select(maxAnimationLength);
-  }
-
+  ngOnInit() { this.max = this.store.select(maxAnimationLength); }
 
   getLevelLabel(drill: Drill): string {
     const minLevel = this.getLevelName(drill.minLevel);
@@ -47,8 +45,19 @@ export class PreviewComponent implements OnInit {
     return level.viewValue;
   }
 
-  drillOpened(drill: Drill) {
-    this.store.dispatch(new LoadAnimation(drill.animations[0]));
-  }
+  drillOpened(drill: Drill) { this.store.dispatch(new LoadAnimation(drill.animations[0])); }
 
+  delete() {
+    if (!this.drill.id) {
+      console.error('Tried to delete drill with no ID');
+      return;
+    }
+    this.db.deleteDrill(this.drill.id)
+        .then(() => {
+          alert('Deleted!');
+        })
+        .catch((err) => {
+          alert('Error deleting');
+        });
+  }
 }

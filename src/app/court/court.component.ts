@@ -149,7 +149,6 @@ export class CourtComponent implements OnInit, AfterViewInit {
     if (action) {
       const size = this.getSize(action, this.keyframeIndex - offset);
       // The volleyball behaves weirdly, so treat it special.
-      console.log(size);
       if (entity.type === EntityType.VOLLEYBALL) {
         svg.scale(size / 72 / 8);
       }
@@ -263,7 +262,6 @@ export class CourtComponent implements OnInit, AfterViewInit {
         // this.canvas.renderAll();
       }
     });
-    this.store.select(getDrawState).subscribe(() => { console.log('draw!'); });
     setTimeout(() => this.cd.markForCheck(), 100);
     this.iconService.getIcons().subscribe(icons => {
       if (icons.size === 0) {

@@ -21,6 +21,7 @@ import {PreviewModule} from '../preview/preview.module';
 
 import {CadetComponent} from './cadet.component';
 import { HomeModule } from '../app/home/home.module';
+import { UserPickerModule } from '../shared/user-picker/user-picker.module';
 
 @Pipe({
   name : 'orderByPhase',
@@ -56,6 +57,7 @@ export class SortByPhasePope implements PipeTransform {
     MatNativeDateModule,
     MatSlideToggleModule,
     HomeModule,
+    UserPickerModule
   ],
   declarations : [ CadetComponent, SortByPhasePope ]
 })

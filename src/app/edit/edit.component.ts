@@ -1,11 +1,14 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit} from '@angular/core';
 import {AbstractControl, FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 import {Store} from '@ngrx/store';
+import {ClickEvent} from 'angular-star-rating';
 import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore';
 import {Observable} from 'rxjs/Observable';
 import {take} from 'rxjs/operators';
 
+import {AuthService} from '../../core/auth/auth.service';
+import {DatabaseService, User} from '../../database.service';
 import {
   DeleteAction,
   getAnimations,
@@ -27,8 +30,6 @@ import {
   LEVELS,
   PHASES
 } from '../model/types';
-import { DatabaseService, User } from '../../database.service';
-import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector : 'drills-edit',
@@ -56,28 +57,6 @@ export class EditDrillComponent implements OnInit {
               private readonly store: Store<{}>, private readonly authService: AuthService) {
 
     this.currentAction = store.select((getCurrentAction));
-    document.addEventListener('keydown', (event) => {
-      switch (event.key) {
-      case 'c':
-        this.store.dispatch(new NextEntityColor());
-        break;
-      case 'r':
-        this.store.dispatch(new Rotate(this.getActionIdOrDie(), 90));
-        break;
-      case 'R':
-        this.store.dispatch(new Rotate(this.getActionIdOrDie(), -90));
-        break;
-      case 'd':
-        this.store.dispatch(new DeleteAction(this.getActionIdOrDie()));
-        break;
-      case 's':
-        if (event.metaKey) {
-          event.preventDefault();
-          this.save();
-        }
-        break;
-      }
-    });
     this.form = this.fb.group({
       name : [ '', Validators.required ],
       description : [ '', Validators.required ],
@@ -125,6 +104,31 @@ export class EditDrillComponent implements OnInit {
         });
       }
     });
+  }
+
+  @HostListener('document:keydown', [ '$event' ])
+  onKeyDown(event: KeyboardEvent) {
+    console.log('click');
+    switch (event.key) {
+    case 'c':
+      this.store.dispatch(new NextEntityColor());
+      break;
+    case 'r':
+      this.store.dispatch(new Rotate(this.getActionIdOrDie(), 90));
+      break;
+    case 'R':
+      this.store.dispatch(new Rotate(this.getActionIdOrDie(), -90));
+      break;
+    case 'd':
+      this.store.dispatch(new DeleteAction(this.getActionIdOrDie()));
+      break;
+    case 's':
+      if (event.metaKey) {
+        event.preventDefault();
+        this.save();
+      }
+      break;
+    }
   }
 
   private getActionIdOrDie(): number {
