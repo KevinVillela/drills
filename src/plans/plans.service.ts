@@ -4,6 +4,11 @@ import { Plan, DatabaseService, PlanWithId, UserPlan } from '../database.service
 import { Observable } from 'rxjs/Observable';
 import { AngularFirestoreCollection, AngularFirestore } from 'angularfire2/firestore';
 
+export interface FullPlanDrill {
+  drill: DrillWithId;
+  duration: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -17,15 +22,14 @@ export class PlansService {
     this.plans = this.databaseService.plansSnapshot;
   }
 
-  drillsForPlan(plan: Plan): DrillWithId[] {
-    const drills = plan.drills.map((drill) => {
+  drillsForPlan(plan: Plan): FullPlanDrill[] {
+    return plan.drills.map((drill) => {
       const res = this.drillForId(drill.drillId);
       if (!res) {
         throw new Error(`Couldn't find drill for ID ${drill.drillId}`);
       }
-      return res;
+      return {drill: res, duration: drill.duration};
     });
-    return drills;
   }
 
   drillForId(id: string) { return this.drills.find((drill) => drill.id === id); }

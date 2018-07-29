@@ -71,6 +71,12 @@ export class NextEntityColor implements Action {
   readonly type = NEXT_ENTITY_COLOR;
 }
 
+export const SET_ANIMATION = 'SET_ANIMATION';
+export class SetAnimation implements Action {
+  readonly type = SET_ANIMATION;
+  constructor(readonly animation: Partial<Animation>) {}
+}
+
 export const ADD_ENTITY = 'ADD_ENTITY';
 
 export class AddEntity implements Action {
@@ -147,7 +153,7 @@ export const NEXT_FRAME = 'NEXT_FRAME';
 
 export class NextFrame implements Action {
   readonly type = NEXT_FRAME;
-  constructor() {}
+  constructor(readonly numberOfFrames = 1) {}
 }
 
 export const DELETE_ENTITY = 'DELETE_ENTITY';
@@ -202,7 +208,7 @@ export class LoadAnimation implements Action {
 
 export type ActionTypes = NextEntityColor|Rotate|SetRotation|LoadAnimation|ChangeAction|
     ChangeActionJump|ChangeActionEnd|AddEntity|AddAction|UpdateKeyframeIndex|SpeedChange|NextFrame|
-    DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction;
+    DeleteEntity|SetPosition|InterpolateChange|PastChange|SelectEntity|DeleteAction|SetAnimation;
 
 export const getDrillsState =
     createSelector((state: {drillsState: DrillsState}) => state.drillsState,
@@ -213,8 +219,7 @@ export const getDrillId = createSelector(getDrillsState, drillsState => drillsSt
 export const getEntities =
     createSelector(getDrillsState, drillsState => drillsState.animations[0].entities);
 
-    export const getSpeed =
-    createSelector(getDrillsState, drillsState => drillsState.speed);
+export const getSpeed = createSelector(getDrillsState, drillsState => drillsState.speed);
 
 export const getKeyframeIndex =
     createSelector(getDrillsState, drillsState => drillsState.keyframeIndex);
@@ -232,12 +237,12 @@ export const getFuture = createSelector(getDrillsState, drillsState => drillsSta
 export const getSelectedEntityId =
     createSelector(getDrillsState, drillsState => drillsState.selectedEntityId);
 
-export const getDrawState = createSelector(
-    getEntities, getKeyframeIndex, getInterpolate, getActions, getPast, getSelectedEntityId,
-    (entities, keyframeIndex, interpolate, actions, past) => {
-      console.log('here');
-      return {entities, keyframeIndex, interpolate, actions, past};
-    });
+export const getDrawState =
+    createSelector(getEntities, getKeyframeIndex, getInterpolate, getActions, getPast,
+                   getSelectedEntityId, (entities, keyframeIndex, interpolate, actions, past) => {
+                     console.log('here');
+                     return {entities, keyframeIndex, interpolate, actions, past};
+                   });
 
 export const maxAnimationLength =
     createSelector(getActions, actions => maxAnimationLengthHelper(actions));
@@ -319,6 +324,8 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     };
   case LOAD_ANIMATION:
     return {...state, animations : [ action.animation ]};
+  case SET_ANIMATION:
+    return {...state, animations : [ {...animation, ...action.animation} ]};
   case ADD_ENTITY: {
     const nextEntityId = getNextEntityId(animation);
     const newAction: EntityAction = {
@@ -540,7 +547,11 @@ export function drillsReducer(state: DrillsState = initialState, action: ActionT
     if (maxLength === 0) {
       return state;
     }
-    return {...state, keyframeIndex : (state.keyframeIndex + 1) % (maxLength + 1)};
+    let keyframeIndex = (state.keyframeIndex + action.numberOfFrames) % (maxLength + 1);
+    if (keyframeIndex < 0) {
+      keyframeIndex = maxLength + keyframeIndex;
+    }
+    return {...state, keyframeIndex};
   case DELETE_ENTITY:
     return {
       ...state,

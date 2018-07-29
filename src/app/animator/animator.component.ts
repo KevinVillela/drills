@@ -14,9 +14,11 @@ import {
   NextFrame,
   PastChange,
   SpeedChange,
-  UpdateKeyframeIndex
+  UpdateKeyframeIndex,
+  SetAnimation
 } from '../model/model';
 import {DrillsState} from '../model/types';
+import { TEMPLATES, Template } from '../model/templates';
 
 @Component({
   selector : 'drills-animator',
@@ -28,6 +30,8 @@ export class AnimatorComponent {
   keyframeIndex: Observable<number>;
   past: Observable<number>;
   future: Observable<number>;
+
+  templates = TEMPLATES;
 
   constructor(private readonly store: Store<{drillsState: DrillsState}>) {
     this.max = store.select(maxAnimationLength);
@@ -48,5 +52,17 @@ export class AnimatorComponent {
       throw new Error('Past change event value was null');
     }
     this.store.dispatch(new PastChange(change.value));
+  }
+
+  forward(frames: number) {
+    let interpolate = 0;
+    this.future.pipe(take(1)).subscribe((f) => {
+      interpolate = f;
+    });
+    this.store.dispatch(new InterpolateChange(interpolate + frames));
+  }
+
+  insertTemplate(template: Template): void {
+    this.store.dispatch(new SetAnimation(template.animation));
   }
 }

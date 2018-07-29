@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {Router} from '@angular/router';
 import {AngularFireAuth} from 'angularfire2/auth';
 import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore';
-import {auth} from 'firebase/app';
+import {auth} from 'firebase';
 import {Observable} from 'rxjs/Observable';
 import {of} from 'rxjs/observable/of';
 import {switchMap, take, shareReplay} from 'rxjs/operators';

@@ -1,0 +1,13 @@
+.row {
+  display: flex;
+  align-items: center;
+
+  img {
+    background-size: 32px;
+    border-radius: 50%;
+    height: 32px;
+    margin-right: 4px;
+    width: 32px;
+    display: block;
+  }
+}

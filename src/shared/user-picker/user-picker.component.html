@@ -1,0 +1,18 @@
+<mat-form-field>
+  <mat-chip-list #chipList>
+    <mat-chip *ngFor="let user of getSelectedUsers()" (removed)="remove(user)">
+      {{user.displayName}}
+      <mat-icon matChipRemove>cancel</mat-icon>
+    </mat-chip>
+  </mat-chip-list>
+  <input #input (input)="inputSubject.next($event.target.value)" [matChipInputFor]="chipList" matInput placeholder="Pick User"
+    [matAutocomplete]="auto">
+  <mat-autocomplete #auto="matAutocomplete" (optionSelected)="add($event)" autoActiveFirstOption>
+    <mat-option *ngFor="let user of filteredUsers | async" [value]="user">
+      <div class="row">
+        <img [src]="user.photoURL">
+        <span>{{user.displayName}}</span>
+      </div>
+    </mat-option>
+  </mat-autocomplete>
+</mat-form-field>

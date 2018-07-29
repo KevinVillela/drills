@@ -143,10 +143,13 @@ export class DatabaseService {
 
   migrate(drillId?: string) {
     this.drills.pipe(take(1), switchMap((snapshot) => from(snapshot))).subscribe((drill) => {
+      if (!drill.environment.includes(Environment.COURT)) {
+        return;
+      }
       if (!drillId || drill.id === drillId) {
         console.log('updating');
         this.db.doc(`drills/${drill.id}`)
-            .update({...drill, creator : 'febuvn0t65RH483TL6BKota0PFr1'})
+            .update({...drill, creator : 'Wm2AriS1yMe16P0JCbyfPgj1yg62'})
             .then(() => console.log('update successful'))
             .catch((err) => { console.error(`Error updating with ID ${drill.id}: ${err}`); });
       }

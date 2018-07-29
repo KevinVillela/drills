@@ -6,7 +6,7 @@ import { RouterModule } from '@angular/router';
 import { CourtModule } from '../app/court/court.module';
 import { StarModule } from '../shared/star/star.module';
 import { StarRatingModule } from 'angular-star-rating';
-import { ViewDrillComponent } from '../preview/view.component';
+import { ViewDrillComponent } from './view.component';
 
 @NgModule({
   imports: [

@@ -35,17 +35,17 @@
     </mat-form-field>
   </div>
 </form>
-<div>
+<div class="generate">
   <button class="action" mat-raised-button (click)="generate()" color="accent">Generate Practice</button>
   <mat-form-field>
-    <mat-select placeholder="Minimum Level" [(ngModel)]="filter.minLevel">
-      <mat-option *ngFor="let level of levels" [value]="level.value">
-        {{ level.viewValue }}
+    <mat-select [(value)]="generateDuration" placeholder="Duration">
+      <mat-option *ngFor="let duration of [90, 120, 150, 180]" [value]="duration">
+        {{ duration }}
       </mat-option>
     </mat-select>
   </mat-form-field>
   <mat-form-field>
-    <mat-select placeholder="Maximum Level" [(ngModel)]="filter.maxLevel">
+    <mat-select placeholder="Level" [(ngModel)]="filter.minLevel">
       <mat-option *ngFor="let level of levels" [value]="level.value">
         {{ level.viewValue }}
       </mat-option>
@@ -120,6 +120,7 @@
     </ng-container>
   </ng-container>
 </mat-accordion>
+Total time: {{getTotalDuration()}} minutes
 <button class="action" mat-raised-button color="primary" (click)="save()">
   Save
 </button>

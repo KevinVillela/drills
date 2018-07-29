@@ -81,6 +81,7 @@ export class CourtComponent implements OnInit, AfterViewInit {
   readonly maxFps = MAX_FPS;
 
   @Input() drillId: string|undefined;
+  @Input() mode: 'edit'|'view' = 'edit';
 
   private selectedEntityId: number|undefined = undefined;
   readonly playing = new BehaviorSubject<boolean>(false);
@@ -129,6 +130,10 @@ export class CourtComponent implements OnInit, AfterViewInit {
     this.store.dispatch(new InterpolateChange(0));
     this.store.dispatch(new PastChange(0));
     this.playing.next(!this.playing.getValue());
+  }
+
+  forward(frames: number) {
+    this.store.dispatch(new NextFrame(frames));
   }
 
   private async drawEntity(entity: Entity, actions: EntityAction[], pos: AbsolutePosition|null,

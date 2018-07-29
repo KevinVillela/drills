@@ -2,7 +2,7 @@ import {Pipe, PipeTransform} from '@angular/core';
 import {Drill, DrillFocus, DrillWithId} from '../app/model/types';
 import {DrillsFilter} from './filter.component';
 import { AuthService } from '../core/auth/auth.service';
-import * as fuzzy from 'fuzzy';
+import * as fuzzy from 'fuzzy/lib/fuzzy';
 
 @Pipe({
   name : 'search',

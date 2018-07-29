@@ -24,12 +24,13 @@ import {AuthService} from '../core/auth/auth.service';
 import {DatabaseService, Plan, PlanDrill, User, UserPlan} from '../database.service';
 import {DrillsFilter} from '../filter/filter.component';
 import {searchFilter} from '../filter/filter.pipe';
-import {PlansService} from '../plans/plans.service';
+import {PlansService, FullPlanDrill} from '../plans/plans.service';
+import { CadetService } from './cadet.service';
 
 @Component({
   selector : 'drills-cadet',
   templateUrl : './cadet.component.html',
-  styleUrls : [ './cadet.component.css' ],
+  styleUrls : [ './cadet.component.scss' ],
   changeDetection : ChangeDetectionStrategy.OnPush,
 })
 export class CadetComponent implements OnInit {
@@ -42,6 +43,7 @@ export class CadetComponent implements OnInit {
 
   readonly form: FormGroup;
 
+  generateDuration = 90;
   plan: Plan = {
     environment : Environment.BEACH,
     drills: [],
@@ -50,6 +52,7 @@ export class CadetComponent implements OnInit {
     location: '',
     datetime: undefined
   };
+
   planId?: string;
   readonly phases = PHASES;
   readonly durations = DURATIONS;
@@ -64,7 +67,8 @@ export class CadetComponent implements OnInit {
   constructor(private readonly fb: FormBuilder, private readonly databaseService: DatabaseService,
               private readonly router: Router, private readonly route: ActivatedRoute,
               private readonly cd: ChangeDetectorRef, private readonly authService: AuthService,
-              private readonly plansService: PlansService, private readonly dialog: MatDialog) {
+              private readonly plansService: PlansService, private readonly dialog: MatDialog,
+            private readonly cadetService: CadetService) {
     this.form = this.fb.group({
       title : [ '', Validators.required ],
       location : [ '', Validators.required ],
@@ -85,7 +89,6 @@ export class CadetComponent implements OnInit {
       if (this.planId != null) {
         this.databaseService.loadPlan(this.planId).subscribe((plan) => {
           if (plan) {
-            console.log(plan);
             this.plan = plan;
             this.filter = {
               environment : [ plan.environment ],
@@ -119,16 +122,7 @@ export class CadetComponent implements OnInit {
   }
 
   generate() {
-    this.plan.drills = [];
-    for (const phase of PHASES) {
-      const newDrill = this.drillForPhase(phase.value);
-      if (newDrill) {
-        this.plan.drills.push({
-          drillId : newDrill.id,
-          duration : newDrill.duration || 10,
-        });
-      }
-    }
+    this.plan.drills = this.cadetService.generatePlan(this.generateDuration, this.filter);
   }
 
   drillWithId(id: string): DrillWithId|undefined {
@@ -139,12 +133,21 @@ export class CadetComponent implements OnInit {
     return this.plan.drills.find((planDrill) => planDrill.drillId === id);
   }
 
-  drillsForPlan(): DrillWithId[] {
+  private justDrillsForPlan(): FullPlanDrill[] {
     const drills = this.plansService.drillsForPlan(this.plan);
     if (this.viewPhases) {
-      return drills.sort((a, b) => a.phase - b.phase);
+      return drills.sort((a, b) => a.drill.phase - b.drill.phase);
     }
     return drills;
+  }
+
+  drillsForPlan(): DrillWithId[] {
+    const drills = this.justDrillsForPlan();
+    return drills.map((drill) => drill.drill);
+  }
+
+  getTotalDuration(): number {
+    return this.justDrillsForPlan().reduce((acc, planDrill) => acc + planDrill.duration, 0);
   }
 
   private drillForPhase(phase: number): DrillWithId {
@@ -269,5 +272,9 @@ export class CadetComponent implements OnInit {
         return;
       }
     }
+  }
+
+  trackByPlanDrill(index: number, planDrill: FullPlanDrill) {
+    return `${planDrill.drill.id}_${planDrill.duration}`;
   }
 }

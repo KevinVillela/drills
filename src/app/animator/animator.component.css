@@ -17,6 +17,10 @@ drills-legend{
   width: 40px;
 }
 
-button {
+.toolbar button {
   width: 20px;
+}
+
+.templates {
+  width: 50px;
 }

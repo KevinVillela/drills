@@ -1,16 +1,28 @@
 :host {
-    position: relative;
+  position: relative;
 }
 
 drills-entity {
-    position: absolute;
+  position: absolute;
 }
 
 .selected {
-    border: gold 2px solid;
+  border: gold 2px solid;
 }
 
 canvas {
-    height: 400px;
-    width: 400px;
+  height: 400px;
+  width: 400px;
+}
+
+button {
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+}
+
+.image {
+  font-size: 15px;
+  font-style: italic;
+  opacity: 0.74;
 }

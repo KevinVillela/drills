@@ -1,20 +1,22 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, Input, OnInit, ChangeDetectionStrategy} from '@angular/core';
 import {Store} from '@ngrx/store';
 import {AngularFirestore} from 'angularfire2/firestore';
 import {Observable} from 'rxjs/Observable';
 import {map} from 'rxjs/operators';
 
 import {LoadAnimation, maxAnimationLength} from '../app/model/model';
-import {Drill, DrillWithId, Environment, LEVELS} from '../app/model/types';
+import {Drill, DrillWithId, Environment, LEVELS, INTENSITIES} from '../app/model/types';
 import {DatabaseService} from '../database.service';
 
 @Component({
   selector : 'drills-preview',
   templateUrl : './preview.component.html',
-  styleUrls : [ './preview.component.scss' ]
+  styleUrls : [ './preview.component.scss' ],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PreviewComponent implements OnInit {
   readonly levels = LEVELS;
+  readonly intensities = INTENSITIES;
   readonly Environment = Environment;
 
   @Input() drill: Drill;
@@ -34,6 +36,7 @@ export class PreviewComponent implements OnInit {
     }
     return `${minLevel} - ${maxLevel}`;
   }
+
   getLevelName(val: number): string {
     const level = this.levels.find((tempLevel) => tempLevel.value === val);
     if (!level) {
@@ -43,6 +46,14 @@ export class PreviewComponent implements OnInit {
       return level.shortViewValue;
     }
     return level.viewValue;
+  }
+
+  getIntensityName(val: number): string {
+    const intensity = this.intensities.find((tmp) => tmp.value === val);
+    if (!intensity) {
+      return '';
+    }
+    return intensity.viewValue;
   }
 
   drillOpened(drill: Drill) { this.store.dispatch(new LoadAnimation(drill.animations[0])); }

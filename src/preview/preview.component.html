@@ -39,10 +39,11 @@
     </div>
   </mat-expansion-panel-header>
   <ng-template matExpansionPanelContent>
+    <div *ngIf="drill.intensity">Intensity: {{getIntensityName(drill.intensity)}}</div>
     <div class="content">
       <span>{{drill.description}}</span>
       <ng-container *ngIf="(max | async) > 0; else noAnimation">
-        <drills-court [drillId]="drill.id"></drills-court>
+        <drills-court [drillId]="drill.id" mode="view"></drills-court>
       </ng-container>
       <ng-template #noAnimation>
         <p class="no-animation">This drill does not have an animation because {{drill.verified ? 'we feel like the description is adequate.' : 'it

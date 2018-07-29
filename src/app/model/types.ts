@@ -135,6 +135,8 @@ export interface Drill {
   verified?: boolean;
   /** The User ID for who created this drill. */
   creator?: string;
+  /** The intensity of the drill on a scall of 1 (not at all intense) to 5 (maximum intensity). */
+  intensity?: number;
 }
 
 export type DrillWithId = DrillsState&{id: string};
@@ -208,4 +210,11 @@ export const PHASES = [
   {viewValue : 'Phase III', value: 3},
   {viewValue : 'Phase IV', value: 4},
   {viewValue : 'Phase V', value: 5},
+];
+export const INTENSITIES = [
+  {viewValue : 'Minimal', value: 1},
+  {viewValue : 'Low', value: 2},
+  {viewValue : 'Medium', value: 3},
+  {viewValue : 'High', value: 4},
+  {viewValue : 'Maximal', value: 5},
 ];

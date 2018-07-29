@@ -10,7 +10,8 @@ import {
   MatNativeDateModule,
   MatSelectModule,
   MatSlideToggleModule,
-  MatTooltipModule
+  MatTooltipModule,
+  MatSnackBarModule
 } from '@angular/material';
 
 import {DrillWithId} from '../app/model/types';
@@ -57,7 +58,8 @@ export class SortByPhasePope implements PipeTransform {
     MatNativeDateModule,
     MatSlideToggleModule,
     HomeModule,
-    UserPickerModule
+    UserPickerModule,
+    MatSnackBarModule
   ],
   declarations : [ CadetComponent, SortByPhasePope ]
 })

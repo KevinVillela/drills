@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AnimatorComponent } from './animator.component';
-import { MatSliderModule, MatIconModule, MatButtonModule, MatSlideToggleModule } from '@angular/material';
+import { MatSliderModule, MatIconModule, MatButtonModule, MatSlideToggleModule, MatMenuModule } from '@angular/material';
 import { HttpClientModule } from '@angular/common/http';
 import { LegendModule } from '../legend/legend.module';
 import { CourtModule } from '../court/court.module';
@@ -25,6 +25,7 @@ import { FormsModule } from '@angular/forms';
     MatSliderModule,
     MatSlideToggleModule,
     ActionModule,
+    MatMenuModule,
   ],
   declarations: [AnimatorComponent],
   exports: [AnimatorComponent]

@@ -28,7 +28,8 @@ import {
   ENVIRONMENTS,
   FOCUSES,
   LEVELS,
-  PHASES
+  PHASES,
+  INTENSITIES
 } from '../model/types';
 
 @Component({
@@ -41,6 +42,7 @@ export class EditDrillComponent implements OnInit {
   readonly levels = LEVELS;
 
   readonly phases = PHASES;
+  readonly intensities = INTENSITIES;
 
   readonly focuses = FOCUSES;
   readonly environments = ENVIRONMENTS;
@@ -66,6 +68,7 @@ export class EditDrillComponent implements OnInit {
       focus : [],
       duration : [ this.durations[0], Validators.required ],
       phase : [ this.phases[0], Validators.required ],
+      intensity : [ this.intensities[0], Validators.required ],
       minPlayers : [ 0, Validators.required ],
       maxPlayers : [ 0, Validators.required ],
       idealPlayers : [ 0, Validators.required ],
@@ -97,6 +100,7 @@ export class EditDrillComponent implements OnInit {
           this.getForm('focus').setValue(drill.focus);
           this.getForm('duration').setValue(drill.duration);
           this.getForm('phase').setValue(drill.phase);
+          this.getForm('intensity').setValue(drill.intensity);
           this.getForm('minPlayers').setValue(drill.minPlayers);
           this.getForm('maxPlayers').setValue(drill.maxPlayers);
           this.getForm('idealPlayers').setValue(drill.idealPlayers);
@@ -108,19 +112,22 @@ export class EditDrillComponent implements OnInit {
 
   @HostListener('document:keydown', [ '$event' ])
   onKeyDown(event: KeyboardEvent) {
-    console.log('click');
+    const actionId = this.getActionId();
+    if (actionId == null) {
+      return;
+    }
     switch (event.key) {
     case 'c':
       this.store.dispatch(new NextEntityColor());
       break;
     case 'r':
-      this.store.dispatch(new Rotate(this.getActionIdOrDie(), 90));
+      this.store.dispatch(new Rotate(actionId, 90));
       break;
     case 'R':
-      this.store.dispatch(new Rotate(this.getActionIdOrDie(), -90));
+      this.store.dispatch(new Rotate(actionId, -90));
       break;
     case 'd':
-      this.store.dispatch(new DeleteAction(this.getActionIdOrDie()));
+      this.store.dispatch(new DeleteAction(actionId));
       break;
     case 's':
       if (event.metaKey) {
@@ -131,16 +138,13 @@ export class EditDrillComponent implements OnInit {
     }
   }
 
-  private getActionIdOrDie(): number {
+  private getActionId(): number|undefined {
     let id: undefined|number;
     this.currentAction.pipe(take(1)).subscribe((val) => {
       if (val) {
         id = val.id;
       }
     });
-    if (id == null) {
-      throw new Error('Could not get action ID');
-    }
     return id;
   }
 
@@ -179,6 +183,7 @@ export class EditDrillComponent implements OnInit {
       focus : this.getForm('focus').value,
       duration : this.getForm('duration').value,
       phase : this.getForm('phase').value,
+      intensity: this.getForm('intensity').value,
       minPlayers : this.getForm('minPlayers').value,
       maxPlayers : this.getForm('maxPlayers').value,
       idealPlayers : this.getForm('idealPlayers').value,

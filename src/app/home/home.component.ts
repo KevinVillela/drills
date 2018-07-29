@@ -45,8 +45,6 @@ export class HomeComponent implements OnInit {
   drills: Observable<DrillWithId[]>;
   readonly focuses = FOCUSES;
   readonly environments = ENVIRONMENTS;
-  readonly levels = LEVELS;
-  readonly phases = PHASES;
 
   readonly Environment = Environment;
   /** The object to filter by. */

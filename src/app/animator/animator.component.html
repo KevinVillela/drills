@@ -1,16 +1,26 @@
+<button class="templates" mat-button [matMenuTriggerFor]="menu">Template</button>
+<mat-menu #menu="matMenu">
+  <button *ngFor="let template of templates" mat-menu-item (click)="insertTemplate(template)">{{template.name}}</button>
+</mat-menu>
 <drills-legend>
-  </drills-legend>
-  <div>
-    <drills-court></drills-court>
-    <drills-action></drills-action>
-  </div>
-  <div>
-    Future
-    <mat-slider thumb-label="true" min="0" max="30" step="1" (input)="onInterpolateChange($event)" [ngModel]="future | async">
-    </mat-slider>
-  </div>
-  <div>
-    Past
-    <mat-slider thumb-label="true" min="0" max="10" step="1" [ngModel]="past | async" (input)="onPastChange($event)" value="3">
-    </mat-slider>
-  </div>
+</drills-legend>
+<div>
+  <drills-court></drills-court>
+  <drills-action></drills-action>
+</div>
+<div class="toolbar">
+  Future
+  <mat-slider thumb-label="true" min="0" max="30" step="1" (input)="onInterpolateChange($event)" [ngModel]="future | async">
+  </mat-slider>
+  <button mat-icon-button (click)="forward(1)">
+      <mat-icon>skip_next</mat-icon>
+    </button>
+  <button mat-icon-button (click)="forward(10)">
+    <mat-icon>forward_10</mat-icon>
+  </button>
+</div>
+<div>
+  Past
+  <mat-slider thumb-label="true" min="0" max="10" step="1" [ngModel]="past | async" (input)="onPastChange($event)" value="3">
+  </mat-slider>
+</div>

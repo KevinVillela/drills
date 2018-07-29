@@ -11,7 +11,7 @@ export class UserProfileComponent {
 
 
   constructor(readonly auth: AuthService, dbService: DatabaseService) {
-    /* dbService.migrate(); */
+    // dbService.migrate();
   }
 
 }
