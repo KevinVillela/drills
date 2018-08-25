@@ -31,6 +31,7 @@ import {
   PHASES,
   INTENSITIES
 } from '../model/types';
+import { MatSnackBar } from '../../../node_modules/@angular/material';
 
 @Component({
   selector : 'drills-edit',
@@ -56,7 +57,8 @@ export class EditDrillComponent implements OnInit {
 
   constructor(private readonly fb: FormBuilder, private readonly db: DatabaseService,
               route: ActivatedRoute, private readonly router: Router,
-              private readonly store: Store<{}>, private readonly authService: AuthService) {
+              private readonly store: Store<{}>, private readonly authService: AuthService,
+            private readonly snackBar: MatSnackBar) {
 
     this.currentAction = store.select((getCurrentAction));
     this.form = this.fb.group({
@@ -160,11 +162,11 @@ export class EditDrillComponent implements OnInit {
 
   save() {
     if (!this.form.valid) {
-      alert('Please fix form errors before saving.');
+      this.snackBar.open('Please fix form errors before saving.', '', {duration: 1000});
       return;
     }
     if (!this.authService.getUserSync()) {
-      alert('Please log-in using the button in the top-right hand corner to save drills.');
+      this.snackBar.open('Please log-in using the button in the top-right hand corner to save drills.', '', {duration: 1000});
       return;
     }
     let currentAnimations: Animation[]|null = null;
@@ -192,23 +194,23 @@ export class EditDrillComponent implements OnInit {
     };
     if (this.drillId !== undefined) {
       this.db.updateDrill(this.drillId, drill)
-          .then((id) => { alert('Updated Successfully'); })
-          .catch((err) => { alert('Error updating!'); });
+          .then((id) => { this.snackBar.open('Updated Successfully', '', {duration: 1000}); })
+          .catch((err) => { this.snackBar.open('Error updating!', '' , {duration: 1000}); });
     } else {
       this.db.addDrill(drill)
           .then((doc) => { this.router.navigateByUrl(`edit/${doc.id}`); })
-          .catch((err) => { alert('Error adding'); });
+          .catch((err) => { this.snackBar.open('Error adding', '', {duration: 1000}); });
     }
   }
 
   delete() {
     this.db.deleteDrill(this.drillId)
         .then(() => {
-          alert('Deleted!');
+          this.snackBar.open('Deleted!', '', {duration: 1000});
           this.router.navigateByUrl('/');
         })
         .catch((err) => {
-          alert('Error deleting');
+          this.snackBar.open('Error deleting', '', {duration: 1000});
           console.error(err);
         });
   }

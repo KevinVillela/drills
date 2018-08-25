@@ -4,10 +4,12 @@ import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from
 import { tap, map, take } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { Observable } from 'rxjs/Observable';
+import { MatSnackBar } from '../../../node_modules/@angular/material';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private auth: AuthService, private router: Router) {}
+  constructor(private readonly auth: AuthService, private readonly router: Router,
+  private readonly snackBar: MatSnackBar) {}
 
 
   canActivate(
@@ -21,7 +23,7 @@ export class AuthGuard implements CanActivate {
            }),
            tap(loggedIn => {
              if (!loggedIn) {
-               alert('You must login to access this page');
+              this.snackBar.open('You must login to access this page', '', {duration: 1000});
                this.router.navigate(['/profile']);
              }
          }));

@@ -8,6 +8,7 @@ import {map, mapTo, shareReplay, switchMap, take, flatMap, filter, tap} from 'rx
 
 import {Drill, DrillsState, DrillWithId, Environment} from './app/model/types';
 import {AuthService} from './core/auth/auth.service';
+import { MatSnackBar } from '../node_modules/@angular/material';
 
 export interface User {
   uid: string;
@@ -53,7 +54,7 @@ export class DatabaseService {
   readonly plansSnapshot: Observable<PlanWithId[]>;
   user: User|undefined|null;
 
-  constructor(private readonly db: AngularFirestore, private readonly authService: AuthService) {
+  constructor(private readonly db: AngularFirestore, private readonly authService: AuthService, private readonly snackBar: MatSnackBar) {
     this.drillsCollection = db.collection('drills');
     this.plansCollection = db.collection('plans');
     this.plansSnapshot = this.plansCollection.snapshotChanges().pipe(
@@ -119,7 +120,7 @@ export class DatabaseService {
   updateStarredDrill(drillId: string, starred: boolean) {
     const currentUser = this.authService.getUserDoc();
     if (!currentUser) {
-      alert('Plese login to use the starred functionality.');
+      this.snackBar.open('Plese login to use the starred functionality.', '', {duration: 1000});
       return;
     }
     const userAgain = this.authService.getUserSync();

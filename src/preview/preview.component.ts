@@ -7,6 +7,7 @@ import {map} from 'rxjs/operators';
 import {LoadAnimation, maxAnimationLength} from '../app/model/model';
 import {Drill, DrillWithId, Environment, LEVELS, INTENSITIES} from '../app/model/types';
 import {DatabaseService} from '../database.service';
+import { MatSnackBar } from '../../node_modules/@angular/material';
 
 @Component({
   selector : 'drills-preview',
@@ -24,7 +25,8 @@ export class PreviewComponent implements OnInit {
 
   max: Observable<number>;
 
-  constructor(private readonly store: Store<{}>, private readonly db: DatabaseService) {}
+  constructor(private readonly store: Store<{}>, private readonly db: DatabaseService,
+  private readonly snackBar: MatSnackBar) {}
 
   ngOnInit() { this.max = this.store.select(maxAnimationLength); }
 
@@ -65,10 +67,10 @@ export class PreviewComponent implements OnInit {
     }
     this.db.deleteDrill(this.drill.id)
         .then(() => {
-          alert('Deleted!');
+          this.snackBar.open('Deleted!', '', {duration: 1000});
         })
         .catch((err) => {
-          alert('Error deleting');
+          this.snackBar.open('Error deleting', '', {duration: 1000});
         });
   }
 }

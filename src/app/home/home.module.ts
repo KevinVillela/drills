@@ -13,7 +13,8 @@ import {
   MatListModule,
   MatCheckbox,
   MatCheckboxModule,
-  MatDialogModule
+  MatDialogModule,
+  MatSnackBarModule
 } from '@angular/material';
 import {RouterModule} from '@angular/router';
 import {AngularFireModule} from 'angularfire2';
@@ -41,7 +42,8 @@ import { SelectDrillComponent } from './select-drill/select-drill.component';
     FilterModule,
     PreviewModule,
     MatCheckboxModule,
-    MatDialogModule
+    MatDialogModule,
+    MatSnackBarModule
   ],
   declarations : [ HomeComponent, SelectDrillComponent ],
   exports : [ HomeComponent, SelectDrillComponent ],

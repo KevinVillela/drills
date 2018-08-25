@@ -8,7 +8,8 @@ import {
   MatSelectModule,
   MatSliderModule,
   MatSlideToggleModule,
-  MatTooltipModule
+  MatTooltipModule,
+  MatSnackBarModule
 } from '@angular/material';
 import {BrowserModule} from '@angular/platform-browser';
 import {RouterModule} from '@angular/router';
@@ -33,6 +34,7 @@ import {EditDrillComponent} from './edit.component';
     MatSlideToggleModule,
     MatTooltipModule,
     StarModule,
+    MatSnackBarModule
   ],
   declarations : [ EditDrillComponent ],
   exports : [ EditDrillComponent ]

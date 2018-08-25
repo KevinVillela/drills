@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit} from '@angular/core';
 import {AbstractControl, FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {MatDialog, MatDialogRef} from '@angular/material';
+import {MatDialog, MatDialogRef, MatSnackBar} from '@angular/material';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 // import { Timestamp } from '@firebase/firestore-types';
 import {Timestamp} from '@firebase/firestore-types';
@@ -68,7 +68,8 @@ export class CadetComponent implements OnInit {
               private readonly router: Router, private readonly route: ActivatedRoute,
               private readonly cd: ChangeDetectorRef, private readonly authService: AuthService,
               private readonly plansService: PlansService, private readonly dialog: MatDialog,
-            private readonly cadetService: CadetService) {
+            private readonly cadetService: CadetService,
+          private readonly snackBar: MatSnackBar) {
     this.form = this.fb.group({
       title : [ '', Validators.required ],
       location : [ '', Validators.required ],
@@ -122,6 +123,7 @@ export class CadetComponent implements OnInit {
   }
 
   generate() {
+    this.filter.environment = [this.getForm('environment').value];
     this.plan.drills = this.cadetService.generatePlan(this.generateDuration, this.filter);
   }
 
@@ -172,7 +174,7 @@ export class CadetComponent implements OnInit {
         this.planId = id;
         this.router.navigateByUrl(`cadet/${id}`);
       }
-      alert('Plan saved successfully');
+      this.snackBar.open('Plan saved successfully', '', {duration: 1000});
     });
   }
 

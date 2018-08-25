@@ -28,6 +28,7 @@ import {
 } from '../model/types';
 import { AuthService } from '../../core/auth/auth.service';
 import { EventEmitter } from 'protractor';
+import { MatSnackBar } from '../../../node_modules/@angular/material';
 
 @Component({
   selector : 'drills-home',
@@ -55,7 +56,8 @@ export class HomeComponent implements OnInit {
 
   constructor(private readonly databaseService: DatabaseService,
               private readonly cd: ChangeDetectorRef,
-            private readonly authService: AuthService) {
+            private readonly authService: AuthService,
+          private readonly snackBar: MatSnackBar) {
     this.drills = this.databaseService.drills;
   }
 
@@ -99,7 +101,7 @@ export class HomeComponent implements OnInit {
 
   toggleStar() {
     if (!this.authService.getUserSync()) {
-      alert('Please log-in to filter by favorites.');
+      this.snackBar.open('Please log-in to filter by favorites.', '', {duration: 1000});
       return;
     }
     if (this.filter.starred === undefined) {
