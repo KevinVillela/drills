@@ -7,6 +7,7 @@ import {AngularFirestore, AngularFirestoreDocument} from 'angularfire2/firestore
 import {Observable} from 'rxjs/Observable';
 import {take} from 'rxjs/operators';
 
+import {MatSnackBar} from '../../../node_modules/@angular/material';
 import {AuthService} from '../../core/auth/auth.service';
 import {DatabaseService, User} from '../../database.service';
 import {
@@ -27,11 +28,10 @@ import {
   Environment,
   ENVIRONMENTS,
   FOCUSES,
+  INTENSITIES,
   LEVELS,
-  PHASES,
-  INTENSITIES
+  PHASES
 } from '../model/types';
-import { MatSnackBar } from '../../../node_modules/@angular/material';
 
 @Component({
   selector : 'drills-edit',
@@ -58,7 +58,7 @@ export class EditDrillComponent implements OnInit {
   constructor(private readonly fb: FormBuilder, private readonly db: DatabaseService,
               route: ActivatedRoute, private readonly router: Router,
               private readonly store: Store<{}>, private readonly authService: AuthService,
-            private readonly snackBar: MatSnackBar) {
+              private readonly snackBar: MatSnackBar) {
 
     this.currentAction = store.select((getCurrentAction));
     this.form = this.fb.group({
@@ -115,20 +115,26 @@ export class EditDrillComponent implements OnInit {
   @HostListener('document:keydown', [ '$event' ])
   onKeyDown(event: KeyboardEvent) {
     const actionId = this.getActionId();
-    if (actionId == null) {
-      return;
-    }
     switch (event.key) {
     case 'c':
       this.store.dispatch(new NextEntityColor());
       break;
     case 'r':
+      if (actionId == null) {
+        return;
+      }
       this.store.dispatch(new Rotate(actionId, 90));
       break;
     case 'R':
+      if (actionId == null) {
+        return;
+      }
       this.store.dispatch(new Rotate(actionId, -90));
       break;
     case 'd':
+      if (actionId == null) {
+        return;
+      }
       this.store.dispatch(new DeleteAction(actionId));
       break;
     case 's':
@@ -162,11 +168,13 @@ export class EditDrillComponent implements OnInit {
 
   save() {
     if (!this.form.valid) {
-      this.snackBar.open('Please fix form errors before saving.', '', {duration: 1000});
+      this.snackBar.open('Please fix form errors before saving.', '', {duration : 1000});
       return;
     }
     if (!this.authService.getUserSync()) {
-      this.snackBar.open('Please log-in using the button in the top-right hand corner to save drills.', '', {duration: 1000});
+      this.snackBar.open(
+          'Please log-in using the button in the top-right hand corner to save drills.', '',
+          {duration : 1000});
       return;
     }
     let currentAnimations: Animation[]|null = null;
@@ -185,7 +193,7 @@ export class EditDrillComponent implements OnInit {
       focus : this.getForm('focus').value,
       duration : this.getForm('duration').value,
       phase : this.getForm('phase').value,
-      intensity: this.getForm('intensity').value,
+      intensity : this.getForm('intensity').value,
       minPlayers : this.getForm('minPlayers').value,
       maxPlayers : this.getForm('maxPlayers').value,
       idealPlayers : this.getForm('idealPlayers').value,
@@ -194,23 +202,23 @@ export class EditDrillComponent implements OnInit {
     };
     if (this.drillId !== undefined) {
       this.db.updateDrill(this.drillId, drill)
-          .then((id) => { this.snackBar.open('Updated Successfully', '', {duration: 1000}); })
-          .catch((err) => { this.snackBar.open('Error updating!', '' , {duration: 1000}); });
+          .then((id) => { this.snackBar.open('Updated Successfully', '', {duration : 1000}); })
+          .catch((err) => { this.snackBar.open('Error updating!', '', {duration : 1000}); });
     } else {
       this.db.addDrill(drill)
           .then((doc) => { this.router.navigateByUrl(`edit/${doc.id}`); })
-          .catch((err) => { this.snackBar.open('Error adding', '', {duration: 1000}); });
+          .catch((err) => { this.snackBar.open('Error adding', '', {duration : 1000}); });
     }
   }
 
   delete() {
     this.db.deleteDrill(this.drillId)
         .then(() => {
-          this.snackBar.open('Deleted!', '', {duration: 1000});
+          this.snackBar.open('Deleted!', '', {duration : 1000});
           this.router.navigateByUrl('/');
         })
         .catch((err) => {
-          this.snackBar.open('Error deleting', '', {duration: 1000});
+          this.snackBar.open('Error deleting', '', {duration : 1000});
           console.error(err);
         });
   }

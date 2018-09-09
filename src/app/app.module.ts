@@ -41,6 +41,8 @@ import {HomeModule} from './home/home.module';
 import {drillsReducer} from './model/model';
 import {ModelModule} from './model/model.module';
 import {ENTITY_TYPES} from './model/types';
+import {RankingsComponent} from './rankings/rankings.component';
+import {RankingsModule} from './rankings/rankings.module';
 
 const ROUTES: Routes = [
   {path : '', component : HomeComponent, pathMatch : 'full'},
@@ -62,6 +64,7 @@ const ROUTES: Routes = [
     pathMatch : 'full',
     data : {startExpanded : true}
   },
+  {path : 'rankings', component : RankingsComponent, pathMatch : 'full'},
 ];
 
 @NgModule({
@@ -91,7 +94,8 @@ const ROUTES: Routes = [
     UserProfileModule,
     StarRatingModule.forRoot(),
     PlansModule,
-    MatMenuModule
+    MatMenuModule,
+    RankingsModule,
   ],
   providers : [],
   bootstrap : [ AppComponent ]
@@ -109,5 +113,7 @@ export class AppModule {
                             sanitizer.bypassSecurityTrustResourceUrl(`assets/cheetah.svg`));
     iconRegistry.addSvgIcon('drill',
                             sanitizer.bypassSecurityTrustResourceUrl(`assets/whistle.svg`));
+    iconRegistry.addSvgIcon('olympics_2',
+                            sanitizer.bypassSecurityTrustResourceUrl(`assets/olympics_2.svg`));
   }
 }

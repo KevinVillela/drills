@@ -1,11 +1,15 @@
 <mat-toolbar>
   <button mat-button routerLink="/" matTooltip="Home">
     <mat-icon class="material-icons" svgIcon="drill"></mat-icon>
-    VolleyDrills
+    Drills
   </button>
   <button mat-button routerLink="/plans" matTooltip="View your practice plans">
     <mat-icon class="material-icons">assignment</mat-icon>
     Plans
+  </button>
+  <button mat-button routerLink="/rankings" matTooltip="Up-do-date Olympic Rankings!">
+    <mat-icon class="material-icons" svgIcon="olympics_2"></mat-icon>
+    Rankings
   </button>
   <div class="right">
     <button mat-icon-button routerLink="profile" matTooltip="Login" *ngIf="!(authService.user | async)">

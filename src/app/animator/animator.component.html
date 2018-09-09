@@ -10,11 +10,17 @@
 </div>
 <div class="toolbar">
   Future
+  <button mat-icon-button (click)="forward(-10)">
+    <mat-icon>replay_10</mat-icon>
+  </button>
+  <button mat-icon-button (click)="forward(-1)">
+    <mat-icon>skip_previous</mat-icon>
+  </button>
   <mat-slider thumb-label="true" min="0" max="30" step="1" (input)="onInterpolateChange($event)" [ngModel]="future | async">
   </mat-slider>
   <button mat-icon-button (click)="forward(1)">
-      <mat-icon>skip_next</mat-icon>
-    </button>
+    <mat-icon>skip_next</mat-icon>
+  </button>
   <button mat-icon-button (click)="forward(10)">
     <mat-icon>forward_10</mat-icon>
   </button>

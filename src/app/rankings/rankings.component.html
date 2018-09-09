@@ -1,0 +1,53 @@
+<mat-form-field>
+  <mat-select placeholder="Year" [ngModel]="yearChange | async" (ngModelChange)="yearChange.next($event)">
+    <mat-option *ngFor="let year of years" [value]="year">
+      {{ year }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+<mat-form-field>
+  <mat-select placeholder="Gender" [ngModel]="genderChange | async" (ngModelChange)="genderChange.next($event)">
+    <mat-option *ngFor="let gender of ['M', 'W']" [value]="gender">
+      {{ gender }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+<mat-form-field>
+  <mat-select placeholder="Country" [ngModel]="countryChange | async" (ngModelChange)="countryChange.next($event)">
+    <mat-option *ngFor="let country of ['USA', 'All']" [value]="country">
+      {{ country }}
+    </mat-option>
+  </mat-select>
+</mat-form-field>
+<div *ngIf="(rankings | async).status === 'LOADING'" class="loading">
+  Reticulating splines... Please wait
+  <mat-progress-spinner mode="indeterminate" [strokeWidth]="2" [diameter]="32"></mat-progress-spinner>
+</div>
+<mat-table *ngIf="(rankings | async).result" [dataSource]="(rankings | async).result" class="mat-elevation-z8">
+
+  <ng-container matColumnDef="position">
+    <mat-header-cell *matHeaderCellDef> Position </mat-header-cell>
+    <mat-cell *matCellDef="let element"> {{element.position}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="name">
+    <mat-header-cell *matHeaderCellDef> Team Name </mat-header-cell>
+    <mat-cell *matCellDef="let element"> {{element.name}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="points">
+    <mat-header-cell *matHeaderCellDef> Points </mat-header-cell>
+    <mat-cell *matCellDef="let element"> {{element.points}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="country">
+    <mat-header-cell *matHeaderCellDef> Country </mat-header-cell>
+    <mat-cell *matCellDef="let element"> {{element.country}} </mat-cell>
+  </ng-container>
+
+  <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+  <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+</mat-table>
+<div *ngIf="(rankings | async).error; let error">
+  {{error}}
+</div>

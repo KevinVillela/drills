@@ -15,3 +15,7 @@
   width: 32px;
   display: block;
 }
+
+button, mat-toolbar {
+  padding: 0;
+}
