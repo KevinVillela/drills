@@ -16,7 +16,7 @@ import { ViewPlanComponent } from './plan/view-plan.component';
     MatMenuModule,
     MatIconModule,
     MatButtonModule,
-    MatChipsModule
+    MatChipsModule,
   ],
   declarations: [PlansComponent, PlanComponent, ViewPlanComponent, PlayerInfoPipe]
 })

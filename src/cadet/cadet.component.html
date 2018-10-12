@@ -68,7 +68,7 @@
   <ng-container *ngIf="viewPhases">
     <ng-container *ngFor="let phase of phases">
       <h3>
-        Phase {{phase.viewValue}}
+        {{phase.viewValue}}
         <button mat-icon-button (click)="addForPhase(phase.value)" [matTooltip]="'Add a new phase ' + phase.viewValue + ' drill'">
           <mat-icon>add</mat-icon>
         </button>
@@ -94,8 +94,9 @@
     </ng-container>
   </ng-container>
   <ng-container *ngIf="!viewPhases">
-    <ng-container *ngFor="let drill of drills; let idx = index;">
-      <div class="container">
+    <cdk-drop (dropped)="onReorder($event)">
+      <div *ngFor="let drill of drills; let idx = index;" class="container" cdkDrag>
+        <mat-icon cdkDragHandle>drag_indicator</mat-icon>
         <button mat-icon-button (click)="refresh(drill)" matTooltip="Pick a new random drill">
           <mat-icon>refresh</mat-icon>
         </button>
@@ -108,8 +109,8 @@
         </mat-form-field>
         <drills-preview [drill]="drill"></drills-preview>
         <button mat-icon-button (click)="editForIndex(idx)" matTooltip="Edit this drill">
-            <mat-icon>edit</mat-icon>
-          </button>
+          <mat-icon>edit</mat-icon>
+        </button>
         <button mat-icon-button (click)="addForIndex(idx)" matTooltip="Add a new drill after this one">
           <mat-icon>add</mat-icon>
         </button>
@@ -117,7 +118,7 @@
           <mat-icon>delete</mat-icon>
         </button>
       </div>
-    </ng-container>
+    </cdk-drop>
   </ng-container>
 </mat-accordion>
 Total time: {{getTotalDuration()}} minutes

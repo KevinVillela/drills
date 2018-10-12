@@ -29,12 +29,12 @@
     <p>
       {{ p.notes }}
     </p>
-    <div *ngFor="let planDrill of planDrills | async; let idx = index;" class="drill">
-      <div class="container">
-        {{ planDrill.duration }}
-        <br> min
+      <div *ngFor="let planDrill of planDrills | async; let idx = index;" class="drill">
+        <div class="container">
+          {{ planDrill.duration }}
+          <br> min
+        </div>
+        <drills-preview [drill]="planDrill.drill"></drills-preview>
       </div>
-      <drills-preview [drill]="planDrill.drill"></drills-preview>
-    </div>
   </ng-template>
 </mat-expansion-panel>

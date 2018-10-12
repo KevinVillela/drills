@@ -26,6 +26,7 @@ import {DrillsFilter} from '../filter/filter.component';
 import {searchFilter} from '../filter/filter.pipe';
 import {PlansService, FullPlanDrill} from '../plans/plans.service';
 import { CadetService } from './cadet.service';
+import { CdkDragDrop } from '@angular/cdk-experimental/drag-drop';
 
 @Component({
   selector : 'drills-cadet',
@@ -112,6 +113,12 @@ export class CadetComponent implements OnInit {
         });
       }
     });
+  }
+
+  onReorder(event: CdkDragDrop<{}>) {
+    const tmp = this.plan.drills[event.previousIndex];
+    this.plan.drills[event.previousIndex] = this.plan.drills[event.currentIndex];
+    this.plan.drills[event.currentIndex] = tmp;
   }
 
   private getForm(name: string): AbstractControl {
